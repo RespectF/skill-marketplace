@@ -1,8 +1,15 @@
 {
+  "version": 2,
   "framework": null,
   "buildCommand": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outfile=api/index.js --minify",
   "outputDirectory": "dist/public",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.js" }
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/index.js" }
   ]
 }
