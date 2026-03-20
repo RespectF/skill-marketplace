@@ -22,8 +22,13 @@ let _pool: mysql.Pool | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
+      const dbUrl = new URL(process.env.DATABASE_URL);
       _pool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
+        host: dbUrl.hostname,
+        port: parseInt(dbUrl.port || '3306'),
+        user: dbUrl.username,
+        password: dbUrl.password,
+        database: dbUrl.pathname.replace(/^\//, ''),
         ssl: { rejectUnauthorized: false },
       });
       _db = drizzle(_pool);
