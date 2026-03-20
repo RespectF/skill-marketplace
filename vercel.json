@@ -1,6 +1,9 @@
 {
   "framework": null,
   "routes": [
-    { "src": "/api/trpc/(.*)", "dest": "/api/trpc" }
+    { "src": "/api/trpc/(.*)", "dest": "/api" },
+    { "src": "/api/auth/(.*)", "dest": "/api" },
+    { "src": "/api/github/(.*)", "dest": "/api" },
+    { "src": "/api/skill-execute/(.*)", "dest": "/api" }
   ]
 }
