@@ -24,7 +24,7 @@ try {
       onError({ error, path }) {
         console.error(`[tRPC Error] ${path}:`, error?.message || error);
       },
-      allowBatching: true,
+      // allowBatching: true,  // Disabled for debugging
     })
   );
   console.log("[API] tRPC middleware ready");
