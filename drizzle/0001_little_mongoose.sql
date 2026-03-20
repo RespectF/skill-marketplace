@@ -1,0 +1,21 @@
+CREATE TABLE `skills` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`slug` varchar(128) NOT NULL,
+	`title` varchar(128) NOT NULL,
+	`description` text NOT NULL,
+	`category` enum('创意设计','开发技术','企业通信','文档处理','工具') NOT NULL DEFAULT '工具',
+	`skillMd` text NOT NULL,
+	`coverUrl` text,
+	`githubUrl` text,
+	`isOfficial` boolean NOT NULL DEFAULT false,
+	`isFeatured` boolean NOT NULL DEFAULT false,
+	`isEditorsPick` boolean NOT NULL DEFAULT false,
+	`viewCount` int NOT NULL DEFAULT 0,
+	`authorId` int,
+	`authorName` varchar(128),
+	`uiConfig` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `skills_id` PRIMARY KEY(`id`),
+	CONSTRAINT `skills_slug_unique` UNIQUE(`slug`)
+);

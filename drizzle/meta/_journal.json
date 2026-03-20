@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1773752632454,
+      "tag": "0000_shocking_madelyne_pryor",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1773752774629,
+      "tag": "0001_little_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773802789508,
+      "tag": "0002_luxuriant_morg",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1773884468849,
+      "tag": "0003_medical_unicorn",
+      "breakpoints": true
+    }
+  ]
+}
