@@ -11,19 +11,20 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
-// Test route at /api/trpc
-app.get("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
-  console.log("[API] /api/trpc GET handler");
+// Test route at /api/trpc-root
+app.get("/api/trpc-root", (_req: VercelRequest, res: VercelResponse) => {
+  console.log("[API] /api/trpc-root GET");
   res.status(200).json({ success: true, at: "trpc-root" });
 });
 
 try {
   console.log("[API] Importing tRPC router...");
   const { appRouter } = require("../server/routers");
-  console.log("[API] Creating tRPC middleware...");
+  console.log("[API] Creating tRPC middleware at /trpc路径");
 
+  // Mount tRPC at /trpc路径 (a non-standard path to test)
   app.use(
-    "/api/trpc",
+    "/trpc路径",
     createExpressMiddleware({
       router: appRouter,
       createContext: async () => ({}),
@@ -32,7 +33,7 @@ try {
       },
     })
   );
-  console.log("[API] tRPC middleware ready");
+  console.log("[API] tRPC middleware ready at /trpc路径");
 } catch (err) {
   console.error("[API] Failed to setup tRPC:", err);
 }
