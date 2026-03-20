@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 console.log("[API] Loading...");
 
@@ -11,20 +12,28 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "express-ok" });
 });
 
-let tRPCLoaded = false;
-let router: any = null;
-
 try {
   console.log("[API] Importing tRPC router...");
   const { appRouter } = require("../server/routers");
-  console.log("[API] tRPC router imported");
-  router = appRouter;
-  tRPCLoaded = true;
+  console.log("[API] Creating tRPC middleware...");
+
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: async () => ({}),
+      onError({ error, path }) {
+        console.error(`[tRPC Error] ${path}:`, error?.message || error);
+      },
+      allowBatching: true,
+    })
+  );
+  console.log("[API] tRPC middleware ready");
 } catch (err) {
-  console.error("[API] Failed to import tRPC router:", err);
+  console.error("[API] Failed to setup tRPC:", err);
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  console.log("[API] Handler called:", req.url, "tRPC:", tRPCLoaded);
+  console.log("[API] Handler called:", req.url);
   app(req, res);
 }
