@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 console.log("[API] Loading...");
 
@@ -10,18 +11,32 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
-// Direct route at /api/trpc (no tRPC)
 app.get("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
-  console.log("[API] /api/trpc GET called");
+  console.log("[API] /api/trpc GET");
   res.status(200).json({ success: true, endpoint: "trpc-get" });
 });
 
-app.post("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
-  console.log("[API] /api/trpc POST called");
-  res.status(200).json({ success: true, endpoint: "trpc-post" });
-});
+try {
+  console.log("[API] Importing tRPC router...");
+  const { appRouter } = require("../server/routers");
+  console.log("[API] Creating tRPC middleware...");
 
-// Catchall
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: async () => ({}),
+      onError({ error, path }) {
+        console.error(`[tRPC Error] ${path}:`, error?.message || error);
+      },
+      allowBatching: true,
+    })
+  );
+  console.log("[API] tRPC middleware ready");
+} catch (err) {
+  console.error("[API] Failed to setup tRPC:", err);
+}
+
 app.use((req, res) => {
   console.log("[API] Unmatched:", req.path);
   res.status(404).json({ error: "Not found", path: req.path });
