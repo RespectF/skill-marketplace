@@ -1,6 +1,7 @@
 {
   "framework": null,
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://skill-marketplace-roan.vercel.app/api" }
+  "version": 2,
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api", "continue": true }
   ]
 }
