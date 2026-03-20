@@ -1,3 +1,4 @@
+import "dotenv/config";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import serverless from "serverless-http";
 import express from "express";
@@ -15,8 +16,9 @@ app.use(
     router: appRouter,
     createContext,
     onError({ error, path }) {
-      console.error(`[tRPC Error] ${path}:`, error);
+      console.error(`[tRPC Error] ${path}:`, error?.message || error);
     },
+    allowBatching: true,
   })
 );
 
