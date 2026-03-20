@@ -1,11 +1,9 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import serverless from "serverless-http";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 
-// Log environment (without sensitive data) for debugging
+// Log environment for debugging
 console.log("[API] NODE_ENV:", process.env.NODE_ENV);
 console.log("[API] DATABASE_URL set:", !!process.env.DATABASE_URL);
 console.log("[API] JWT_SECRET set:", !!process.env.JWT_SECRET);
@@ -17,8 +15,8 @@ app.use(express.json());
 app.use(
   (
     err: Error,
-    _req: VercelRequest,
-    res: VercelResponse,
+    _req: express.Request,
+    res: express.Response,
     _next: express.NextFunction
   ) => {
     console.error("[API Error]:", err.message, err.stack);
@@ -42,10 +40,10 @@ app.use(
 );
 
 // Test endpoint
-app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
+app.get("/api/test", (_req, res) => {
   res
     .status(200)
     .json({ success: true, DATABASE_URL: !!process.env.DATABASE_URL });
 });
 
-export default serverless(app);
+export default app;
