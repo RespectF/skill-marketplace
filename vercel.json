@@ -2,11 +2,5 @@
   "framework": null,
   "buildCommand": "vite build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x",
-      "memory": 512,
-      "maxDuration": 10
-    }
-  }
+  "installCommand": "pnpm install"
 }
