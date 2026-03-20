@@ -1,26 +1,40 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import serverless from "serverless-http";
+import express from "express";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { registerOAuthRoutes } from "../server/_core/oauth";
+import { appRouter } from "../server/routers";
+import { createContext } from "../server/_core/context";
+import { registerSkillExecuteRoute } from "../server/skillExecute";
+import path from "path";
 
-let handler: any;
-let handlerError: string | null = null;
+// Error handler for unhandled errors
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[Unhandled Rejection]", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("[Uncaught Exception]", error);
+});
+
+const app = express();
+
+app.use((req, _res, next) => {
+  console.log(`[API] ${req.method} ${req.path}`);
+  next();
+});
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 try {
-  const serverless = (await import("serverless-http")).default;
-  const express = (await import("express")).default;
-  const { createExpressMiddleware } = await import("@trpc/server/adapters/express");
-  const { registerOAuthRoutes } = await import("../server/_core/oauth");
-  const { appRouter } = await import("../server/routers");
-  const { createContext } = await import("../server/_core/context");
-  const { registerSkillExecuteRoute } = await import("../server/skillExecute");
-  const path = await import("path");
-
-  const app = express();
-
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
   registerOAuthRoutes(app);
   registerSkillExecuteRoute(app);
+} catch (e) {
+  console.error("[Route Registration Error]", e);
+}
 
+try {
   // Mount tRPC at /trpc (Vercel routes /api/* to api/index.ts, so /trpc becomes /api/trpc)
   app.use(
     "/trpc",
@@ -29,25 +43,15 @@ try {
       createContext,
     })
   );
-
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
-  app.use(express.static(distPath));
-
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-
-  handler = serverless(app);
-} catch (e: any) {
-  console.error("[API Init Error]", e);
-  handlerError = e.message;
+} catch (e) {
+  console.error("[tRPC Middleware Error]", e);
 }
 
-export default async function (req: VercelRequest, res: VercelResponse) {
-  if (handlerError) {
-    console.error("[API Handler Error]", handlerError);
-    res.status(500).json({ error: "Server initialization failed", detail: handlerError });
-    return;
-  }
-  return handler(req, res);
-}
+const distPath = path.resolve(__dirname, "..", "dist", "public");
+app.use(express.static(distPath));
+
+app.use("*", (_req, res) => {
+  res.sendFile(path.resolve(distPath, "index.html"));
+});
+
+export default serverless(app);
