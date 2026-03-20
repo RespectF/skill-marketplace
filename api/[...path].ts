@@ -11,15 +11,8 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Handle all /api/trpc/* paths by mounting at /trpc with path rewrite
-app.use("/trpc", (req: Request, _res: Response, next) => {
-  // Vercel passes /api/trpc/* but express needs /trpc/*
-  // Rewrite the path if it still has /api prefix
-  if (req.path.startsWith("/api/trpc")) {
-    req.url = req.url.replace("/api/trpc", "/trpc");
-  }
-  next();
-}, createExpressMiddleware({
+// Handle /trpc/* paths (Vercel [...path] strips /api prefix)
+app.use("/trpc", createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
