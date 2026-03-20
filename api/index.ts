@@ -11,8 +11,8 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Handle /trpc/* paths (Vercel [...path] strips /api prefix)
-app.use("/trpc", createExpressMiddleware({
+// Handle /api/trpc/* paths (Vercel rewrites /api/trpc/* to /api)
+app.use("/api/trpc", createExpressMiddleware({
   router: appRouter,
   createContext,
 }));
