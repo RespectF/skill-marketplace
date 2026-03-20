@@ -13,10 +13,18 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Rewrite /api/trpc/* to /trpc/* for tRPC handler
+app.use((req, _res, next) => {
+  if (req.path.startsWith("/api/trpc")) {
+    req.url = req.url.replace(/^\/api\/trpc/, "/trpc");
+  }
+  next();
+});
+
 registerOAuthRoutes(app);
 registerSkillExecuteRoute(app);
 
-// Mount tRPC at /trpc (Vercel rewrites /api/trpc/* to /trpc/*)
+// Mount tRPC at /trpc
 app.use(
   "/trpc",
   createExpressMiddleware({
