@@ -1,6 +1,7 @@
 {
   "framework": null,
+  "version": 2,
   "rewrites": [
-    { "source": "/api/trpc/:path*", "destination": "/trpc/:path*" }
+    { "source": "/api/trpc/(.*)", "destination": "/trpc/$1" }
   ]
 }
