@@ -2,8 +2,13 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import serverless from "serverless-http";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+
+console.log("[INIT] Starting...");
+console.log("[INIT] Importing appRouter...");
 import { appRouter } from "../server/routers";
+console.log("[INIT] Importing createContext...");
 import { createContext } from "../server/_core/context";
+console.log("[INIT] Imports complete");
 
 const app = express();
 app.use(express.json());
