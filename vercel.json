@@ -1,5 +1,8 @@
 {
   "framework": null,
   "buildCommand": "vite build",
-  "outputDirectory": "dist/public"
+  "outputDirectory": "dist/public",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api" }
+  ]
 }
