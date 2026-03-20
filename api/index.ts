@@ -1,14 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
-import { initTRPC } from "@trpc/server";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 console.log("[API] Loading...");
-
-const t = initTRPC.create();
-const router = t.router({
-  greeting: t.procedure.query(() => "Hello from tRPC!"),
-});
 
 const app = express();
 app.use(express.json());
@@ -17,18 +11,29 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
-console.log("[API] Creating tRPC middleware with simple router...");
-app.use(
-  "/api/trpc",
-  createExpressMiddleware({
-    router: router,
-    createContext: async () => ({}),
-    onError({ error, path }) {
-      console.error(`[tRPC Error] ${path}:`, error?.message || error);
-    },
-  })
-);
-console.log("[API] tRPC middleware ready");
+try {
+  console.log("[API] Importing tRPC router...");
+  const { appRouter } = require("../server/routers");
+  console.log("[API] appRouter imported successfully");
+  console.log("[API] Creating tRPC middleware...");
+
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: async () => {
+        console.log("[API] createContext called");
+        return {};
+      },
+      onError({ error, path }) {
+        console.error(`[tRPC Error] ${path}:`, error?.message || error);
+      },
+    })
+  );
+  console.log("[API] tRPC middleware ready");
+} catch (err) {
+  console.error("[API] Failed to setup tRPC:", err);
+}
 
 app.use((req, res) => {
   console.log("[API] Unmatched:", req.path);
