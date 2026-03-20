@@ -1,6 +1,6 @@
+import { createServer } from "node:http";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
-import serverless from "serverless-http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
@@ -44,4 +44,7 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, DATABASE_URL: !!process.env.DATABASE_URL });
 });
 
-export default serverless(app);
+// Vercel serverless handler
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  app(req, res);
+}
