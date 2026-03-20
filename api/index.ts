@@ -6,17 +6,18 @@ import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import path from "path";
 
+console.log("[INIT] api/index.ts loading...");
+
 const app = express();
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// tRPC middleware at /trpc (Vercel will route /api/trpc to this)
+// tRPC middleware at /trpc
 app.use("/trpc", (req: Request, _res: Response, next) => {
-  // Strip /api prefix if present
-  const path = req.path;
-  if (path.startsWith("/api/trpc")) {
-    req.url = req.url.replace(/^\/api\/trpc/, "/trpc");
+  console.log("[TRPC] path:", req.path, "url:", req.url);
+  if (req.url.startsWith("/api/trpc")) {
+    req.url = req.url.replace("/api/trpc", "/trpc");
   }
   next();
 }, createExpressMiddleware({
@@ -26,6 +27,7 @@ app.use("/trpc", (req: Request, _res: Response, next) => {
 
 // Serve static files
 const distPath = path.resolve(__dirname, "..", "dist", "public");
+console.log("[INIT] Static path:", distPath);
 app.use(express.static(distPath));
 
 // SPA fallback
@@ -33,4 +35,11 @@ app.use("*", (_req: Request, res: Response) => {
   res.sendFile(path.resolve(distPath, "index.html"));
 });
 
+// Error handler
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("[ERROR]", err.stack);
+  res.status(500).json({ error: String(err.stack) });
+});
+
+console.log("[INIT] Exporting serverless handler");
 export default serverless(app);
