@@ -9,7 +9,7 @@ app.use(express.json());
 
 // Log all requests
 app.use((req, res, next) => {
-  console.log("[API] Incoming:", req.method, req.path);
+  console.log("[API] Incoming:", req.method, req.path, "url:", req.url);
   next();
 });
 
@@ -21,10 +21,10 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
 try {
   console.log("[API] Importing tRPC router...");
   const { appRouter } = require("../server/routers");
-  console.log("[API] Creating tRPC middleware...");
+  console.log("[API] Creating tRPC middleware at /...");
 
+  // Mount at root - tRPC will handle its own routing
   app.use(
-    "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext: async () => ({}),
@@ -38,12 +38,6 @@ try {
 } catch (err) {
   console.error("[API] Failed to setup tRPC:", err);
 }
-
-// Catchall for /api/*
-app.use("/api", (req, res) => {
-  console.log("[API] /api catchall:", req.path);
-  res.status(404).json({ error: "Not found", path: req.path });
-});
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   console.log("[API] Handler called:", req.url);

@@ -3,6 +3,9 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist/public",
   "routes": [
+    { "src": "/api", "dest": "/api/index.ts" },
+    { "src": "/api/trpc", "dest": "/api/index.ts" },
+    { "src": "/api/trpc/(.*)", "dest": "/api/index.ts" },
     { "src": "/api/(.*)", "dest": "/api/index.ts" }
   ]
 }
