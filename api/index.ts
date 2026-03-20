@@ -11,6 +11,12 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
+// Test route at /api/trpc
+app.get("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
+  console.log("[API] /api/trpc GET handler");
+  res.status(200).json({ success: true, at: "trpc-root" });
+});
+
 try {
   console.log("[API] Importing tRPC router...");
   const { appRouter } = require("../server/routers");
@@ -24,7 +30,6 @@ try {
       onError({ error, path }) {
         console.error(`[tRPC Error] ${path}:`, error?.message || error);
       },
-      // allowBatching: true,  // Disabled for debugging
     })
   );
   console.log("[API] tRPC middleware ready");
