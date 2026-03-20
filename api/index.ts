@@ -16,6 +16,14 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
 // tRPC endpoint
 app.use(
   "/api/trpc",
+  (req, res, next) => {
+    try {
+      next();
+    } catch (err) {
+      console.error("[tRPC Error]", err);
+      res.status(500).json({ error: String(err) });
+    }
+  },
   createExpressMiddleware({
     router: appRouter,
     createContext,
