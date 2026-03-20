@@ -11,11 +11,6 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
-app.get("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
-  console.log("[API] /api/trpc GET");
-  res.status(200).json({ success: true, endpoint: "trpc-get" });
-});
-
 try {
   console.log("[API] Importing tRPC router...");
   const { appRouter } = require("../server/routers");
