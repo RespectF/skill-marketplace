@@ -1,6 +1,3 @@
 {
-  "framework": null,
-  "routes": [
-    { "src": "/api/trpc/(.*)", "dest": "/api" }
-  ]
+  "framework": null
 }
