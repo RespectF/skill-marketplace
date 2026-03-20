@@ -3,28 +3,28 @@ import express from "express";
 
 console.log("[API] Loading...");
 
-let app: express.Express;
+const app = express();
+app.use(express.json());
+
+app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
+  console.log("[API] /api/test called");
+  res.status(200).json({ success: true, step: "express-ok" });
+});
+
+let tRPCLoaded = false;
+let router: any = null;
 
 try {
-  app = express();
-  app.use(express.json());
-
-  app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
-    console.log("[API] /api/test called");
-    res.status(200).json({ success: true, step: "express-basic" });
-  });
-
-  // Try importing tRPC components
-  console.log("[API] Importing tRPC...");
+  console.log("[API] Importing tRPC router...");
+  const { appRouter } = require("../server/routers");
+  console.log("[API] tRPC router imported");
+  router = appRouter;
+  tRPCLoaded = true;
 } catch (err) {
-  console.error("[API] Setup error:", err);
+  console.error("[API] Failed to import tRPC router:", err);
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  console.log("[API] Handler called:", req.url);
-  if (app) {
-    app(req, res);
-  } else {
-    res.status(500).json({ error: "App not initialized" });
-  }
+  console.log("[API] Handler called:", req.url, "tRPC:", tRPCLoaded);
+  app(req, res);
 }
