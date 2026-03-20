@@ -25,13 +25,17 @@ export async function getDb() {
       const dbUrl = new URL(process.env.DATABASE_URL);
       _pool = mysql.createPool({
         host: dbUrl.hostname,
-        port: parseInt(dbUrl.port || '3306'),
+        port: parseInt(dbUrl.port || "3306"),
         user: dbUrl.username,
         password: dbUrl.password,
-        database: dbUrl.pathname.replace(/^\//, ''),
-        ssl: { rejectUnauthorized: false },
+        database: dbUrl.pathname.replace(/^\//, ""),
+        ssl: {
+          rejectUnauthorized: false,
+          servername: dbUrl.hostname,
+        },
       });
       _db = drizzle(_pool);
+      console.log("[Database] Connection pool created for:", dbUrl.hostname);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -75,13 +79,20 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db
+    .insert(users)
+    .values(values)
+    .onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -103,9 +114,12 @@ export async function getSkillList(opts: {
 
   const conditions = [];
   if (opts.category) conditions.push(eq(skills.category, opts.category as any));
-  if (opts.authorId !== undefined) conditions.push(eq(skills.authorId, opts.authorId));
-  if (opts.isOfficial !== undefined) conditions.push(eq(skills.isOfficial, opts.isOfficial));
-  if (opts.isFeatured !== undefined) conditions.push(eq(skills.isFeatured, opts.isFeatured));
+  if (opts.authorId !== undefined)
+    conditions.push(eq(skills.authorId, opts.authorId));
+  if (opts.isOfficial !== undefined)
+    conditions.push(eq(skills.isOfficial, opts.isOfficial));
+  if (opts.isFeatured !== undefined)
+    conditions.push(eq(skills.isFeatured, opts.isFeatured));
   if (opts.isEditorsPick !== undefined)
     conditions.push(eq(skills.isEditorsPick, opts.isEditorsPick));
   if (opts.search) {
@@ -146,14 +160,22 @@ export async function getSkillList(opts: {
 export async function getSkillById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(skills).where(eq(skills.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(skills)
+    .where(eq(skills.id, id))
+    .limit(1);
   return result[0] ?? null;
 }
 
 export async function getSkillBySlug(slug: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(skills).where(eq(skills.slug, slug)).limit(1);
+  const result = await db
+    .select()
+    .from(skills)
+    .where(eq(skills.slug, slug))
+    .limit(1);
   return result[0] ?? null;
 }
 
@@ -206,7 +228,10 @@ export async function createConversation(data: InsertConversation) {
 }
 
 /** 更新会话元数据 */
-export async function updateConversation(id: number, data: { title?: string; messageCount?: number }) {
+export async function updateConversation(
+  id: number,
+  data: { title?: string; messageCount?: number }
+) {
   const db = await getDb();
   if (!db) return;
   await db.update(conversations).set(data).where(eq(conversations.id, id));
@@ -264,7 +289,9 @@ export async function deleteConversation(id: number, userId: number) {
     .where(and(eq(conversations.id, id), eq(conversations.userId, userId)))
     .limit(1);
   if (!conv[0]) throw new Error("会话不存在或无权限删除");
-  await db.delete(conversationMessages).where(eq(conversationMessages.conversationId, id));
+  await db
+    .delete(conversationMessages)
+    .where(eq(conversationMessages.conversationId, id));
   await db.delete(conversations).where(eq(conversations.id, id));
 }
 
@@ -277,13 +304,22 @@ export async function getUserSkillApiKey(userId: number, skillId: number) {
   const result = await db
     .select()
     .from(userSkillApiKeys)
-    .where(and(eq(userSkillApiKeys.userId, userId), eq(userSkillApiKeys.skillId, skillId)))
+    .where(
+      and(
+        eq(userSkillApiKeys.userId, userId),
+        eq(userSkillApiKeys.skillId, skillId)
+      )
+    )
     .limit(1);
   return result[0] ?? null;
 }
 
 /** 保存（新增或更新）用户为某个 Skill 配置的 API Key */
-export async function upsertUserSkillApiKey(userId: number, skillId: number, apiKey: string) {
+export async function upsertUserSkillApiKey(
+  userId: number,
+  skillId: number,
+  apiKey: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db
@@ -313,7 +349,10 @@ export async function likeSkill(userId: number, skillId: number) {
   const existing = await getUserSkillLike(userId, skillId);
   if (existing) return false; // already liked
   await db.insert(skillLikes).values({ userId, skillId });
-  await db.update(skills).set({ likeCount: sql`${skills.likeCount} + 1` }).where(eq(skills.id, skillId));
+  await db
+    .update(skills)
+    .set({ likeCount: sql`${skills.likeCount} + 1` })
+    .where(eq(skills.id, skillId));
   return true;
 }
 
@@ -323,8 +362,13 @@ export async function unlikeSkill(userId: number, skillId: number) {
   if (!db) throw new Error("Database not available");
   const existing = await getUserSkillLike(userId, skillId);
   if (!existing) return false; // not liked
-  await db.delete(skillLikes).where(and(eq(skillLikes.userId, userId), eq(skillLikes.skillId, skillId)));
-  await db.update(skills).set({ likeCount: sql`${skills.likeCount} - 1` }).where(eq(skills.id, skillId));
+  await db
+    .delete(skillLikes)
+    .where(and(eq(skillLikes.userId, userId), eq(skillLikes.skillId, skillId)));
+  await db
+    .update(skills)
+    .set({ likeCount: sql`${skills.likeCount} - 1` })
+    .where(eq(skills.id, skillId));
   return true;
 }
 
@@ -335,7 +379,12 @@ export async function getUserSkillFavorite(userId: number, skillId: number) {
   const result = await db
     .select()
     .from(skillFavorites)
-    .where(and(eq(skillFavorites.userId, userId), eq(skillFavorites.skillId, skillId)))
+    .where(
+      and(
+        eq(skillFavorites.userId, userId),
+        eq(skillFavorites.skillId, skillId)
+      )
+    )
     .limit(1);
   return result[0] ?? null;
 }
@@ -347,7 +396,10 @@ export async function favoriteSkill(userId: number, skillId: number) {
   const existing = await getUserSkillFavorite(userId, skillId);
   if (existing) return false;
   await db.insert(skillFavorites).values({ userId, skillId });
-  await db.update(skills).set({ favoriteCount: sql`${skills.favoriteCount} + 1` }).where(eq(skills.id, skillId));
+  await db
+    .update(skills)
+    .set({ favoriteCount: sql`${skills.favoriteCount} + 1` })
+    .where(eq(skills.id, skillId));
   return true;
 }
 
@@ -357,8 +409,18 @@ export async function unfavoriteSkill(userId: number, skillId: number) {
   if (!db) throw new Error("Database not available");
   const existing = await getUserSkillFavorite(userId, skillId);
   if (!existing) return false;
-  await db.delete(skillFavorites).where(and(eq(skillFavorites.userId, userId), eq(skillFavorites.skillId, skillId)));
-  await db.update(skills).set({ favoriteCount: sql`${skills.favoriteCount} - 1` }).where(eq(skills.id, skillId));
+  await db
+    .delete(skillFavorites)
+    .where(
+      and(
+        eq(skillFavorites.userId, userId),
+        eq(skillFavorites.skillId, skillId)
+      )
+    );
+  await db
+    .update(skills)
+    .set({ favoriteCount: sql`${skills.favoriteCount} - 1` })
+    .where(eq(skills.id, skillId));
   return true;
 }
 
@@ -390,16 +452,40 @@ export async function getUserFavoriteSkills(userId: number) {
 }
 
 /** 批量获取用户对多个 Skill 的点赞/收藏状态 */
-export async function getUserSkillInteractions(userId: number, skillIds: number[]) {
+export async function getUserSkillInteractions(
+  userId: number,
+  skillIds: number[]
+) {
   const db = await getDb();
   if (!db) return { likes: new Set<number>(), favorites: new Set<number>() };
-  if (skillIds.length === 0) return { likes: new Set<number>(), favorites: new Set<number>() };
+  if (skillIds.length === 0)
+    return { likes: new Set<number>(), favorites: new Set<number>() };
 
   const [likeRows, favRows] = await Promise.all([
-    db.select({ skillId: skillLikes.skillId }).from(skillLikes)
-      .where(and(eq(skillLikes.userId, userId), sql`${skillLikes.skillId} IN (${sql.join(skillIds.map(id => sql`${id}`), sql`, `)})`)),
-    db.select({ skillId: skillFavorites.skillId }).from(skillFavorites)
-      .where(and(eq(skillFavorites.userId, userId), sql`${skillFavorites.skillId} IN (${sql.join(skillIds.map(id => sql`${id}`), sql`, `)})`)),
+    db
+      .select({ skillId: skillLikes.skillId })
+      .from(skillLikes)
+      .where(
+        and(
+          eq(skillLikes.userId, userId),
+          sql`${skillLikes.skillId} IN (${sql.join(
+            skillIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        )
+      ),
+    db
+      .select({ skillId: skillFavorites.skillId })
+      .from(skillFavorites)
+      .where(
+        and(
+          eq(skillFavorites.userId, userId),
+          sql`${skillFavorites.skillId} IN (${sql.join(
+            skillIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        )
+      ),
   ]);
 
   return {
@@ -411,7 +497,10 @@ export async function getUserSkillInteractions(userId: number, skillIds: number[
 // ─── User profile update ──────────────────────────────────────────────────────
 
 /** 更新用户个人信息 */
-export async function updateUserProfile(userId: number, data: { name?: string; avatarUrl?: string }) {
+export async function updateUserProfile(
+  userId: number,
+  data: { name?: string; avatarUrl?: string }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set(data).where(eq(users.id, userId));
