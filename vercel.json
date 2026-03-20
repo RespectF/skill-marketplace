@@ -1,10 +1,5 @@
 {
   "framework": null,
-  "buildCommand": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outfile=api/index.js --minify",
-  "outputDirectory": "dist/public",
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.js" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "buildCommand": "vite build",
+  "outputDirectory": "dist/public"
 }
