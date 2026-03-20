@@ -775,7 +775,15 @@ Handle all your Excel needs with intelligent automation.
 ];
 
 async function seed() {
-  const connection = await mysql.createConnection(process.env.DATABASE_URL);
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  const connection = await mysql.createConnection({
+    host: dbUrl.hostname,
+    port: parseInt(dbUrl.port || '3306'),
+    user: dbUrl.username,
+    password: dbUrl.password,
+    database: dbUrl.pathname.replace(/^\//, ''),
+    ssl: { rejectUnauthorized: false }
+  });
   const db = drizzle(connection);
 
   console.log("🌱 开始预置官方 Skills 数据...");
