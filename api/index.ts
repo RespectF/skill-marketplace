@@ -1,45 +1,39 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import serverlessHttp from "serverless-http";
-import express, { type Express } from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "../server/_core/oauth";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import { registerSkillExecuteRoute } from "../server/skillExecute";
+import express from "express";
 import path from "path";
 
-function createApp(): Express {
-  const app = express();
+const app = express();
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  registerOAuthRoutes(app);
-  registerSkillExecuteRoute(app);
+registerOAuthRoutes(app);
+registerSkillExecuteRoute(app);
 
-  app.use(
-    "/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
+// Mount tRPC at root - in Vercel, this api/index.ts handles /api/*
+// so /api/trpc routes here with /trpc path
+app.use(
+  "/trpc",
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  })
+);
 
-  // Serve static files from dist/public
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
-  app.use(express.static(distPath));
+// Serve static files
+const distPath = path.resolve(__dirname, "..", "dist", "public");
+app.use(express.static(distPath));
 
-  // SPA fallback
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+// SPA fallback
+app.use("*", (_req, res) => {
+  res.sendFile(path.resolve(distPath, "index.html"));
+});
 
-  return app;
-}
-
-const handler = serverlessHttp(createApp());
-
-export default async function vercelHandler(req: VercelRequest, res: VercelResponse) {
-  const result = await handler(req, res);
-  return result;
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  app(req, res);
 }
