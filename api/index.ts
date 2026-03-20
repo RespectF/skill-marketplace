@@ -8,6 +8,12 @@ import { createContext } from "../server/_core/context";
 const app = express();
 app.use(express.json());
 
+// Global error handler
+app.use((err: Error, _req: VercelRequest, res: VercelResponse, _next: any) => {
+  console.error("[Global Error]", err);
+  res.status(500).json({ error: err.message, stack: err.stack });
+});
+
 // Test endpoint
 app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, message: "Test works!" });
@@ -16,17 +22,12 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
 // tRPC endpoint
 app.use(
   "/api/trpc",
-  (req, res, next) => {
-    try {
-      next();
-    } catch (err) {
-      console.error("[tRPC Error]", err);
-      res.status(500).json({ error: String(err) });
-    }
-  },
   createExpressMiddleware({
     router: appRouter,
     createContext,
+    onError({ error, path }) {
+      console.error(`[tRPC Error] ${path}:`, error);
+    },
   })
 );
 
