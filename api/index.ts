@@ -1,46 +1,46 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import express from "express";
-import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "../server/_core/oauth";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import { registerSkillExecuteRoute } from "../server/skillExecute";
-import path from "path";
+import express from "express";
 
-// Create Express app for Vercel serverless
-const app = express();
+// Create a minimal Express app only for middleware setup
+function createApp() {
+  const app = express();
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// OAuth callback
-registerOAuthRoutes(app);
+  registerOAuthRoutes(app);
+  registerSkillExecuteRoute(app);
 
-// Skill execution SSE endpoint
-registerSkillExecuteRoute(app);
+  // Mount tRPC directly
+  app.use(
+    "/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    })
+  );
 
-// tRPC API
-app.use(
-  "/trpc",
-  createExpressMiddleware({
-    router: appRouter,
-    createContext,
-  })
-);
+  return app;
+}
 
-// Serve static files
-const distPath = path.resolve(__dirname, "..", "public");
-app.use(express.static(distPath));
+const app = createApp();
 
-// SPA fallback
-app.use("*", (_req, res) => {
-  res.sendFile(path.resolve(distPath, "index.html"));
-});
-
-// Vercel serverless handler
 export default function handler(req: VercelRequest, res: VercelResponse) {
-  // Disable HTTP keep-alive to prevent connection issues
-  res.setHeader("Connection", "close");
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  // Let Express handle the request
   app(req, res);
 }
