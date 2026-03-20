@@ -1,9 +1,6 @@
 {
   "framework": null,
-  "rewrites": [
-    { "source": "/api/trpc/(.*)", "destination": "/api" },
-    { "source": "/api/github/(.*)", "destination": "/api" },
-    { "source": "/api/auth/(.*)", "destination": "/api" },
-    { "source": "/api/skill-execute/(.*)", "destination": "/api" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api", "continue": true }
   ]
 }
