@@ -46,4 +46,8 @@ app.get("/api/test", (_req, res) => {
     .json({ success: true, DATABASE_URL: !!process.env.DATABASE_URL });
 });
 
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(3000);
+}
+
 export default app;
