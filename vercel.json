@@ -1,6 +1,6 @@
 {
   "framework": null,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/api/(.*)", "destination": "https://skill-marketplace-roan.vercel.app/api" }
   ]
 }
