@@ -31,7 +31,6 @@ export async function getDb() {
         database: dbUrl.pathname.replace(/^\//, ""),
         ssl: {
           rejectUnauthorized: false,
-          servername: dbUrl.hostname,
         },
       });
       _db = drizzle(_pool);
