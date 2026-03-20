@@ -41,7 +41,7 @@ function createTestApp() {
   return app;
 }
 
-describe("POST /api/skills/:id/execute", () => {
+describe("POST /skills/:id/execute", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -51,7 +51,7 @@ describe("POST /api/skills/:id/execute", () => {
 
     const app = createTestApp();
     const res = await request(app)
-      .post("/api/skills/1/execute")
+      .post("/skills/1/execute")
       .send({ inputs: { task: "test" } });
 
     expect(res.status).toBe(401);
@@ -73,7 +73,7 @@ describe("POST /api/skills/:id/execute", () => {
 
     const app = createTestApp();
     const res = await request(app)
-      .post("/api/skills/abc/execute")
+      .post("/skills/abc/execute")
       .send({ inputs: { task: "test" } });
 
     expect(res.status).toBe(400);
@@ -95,7 +95,7 @@ describe("POST /api/skills/:id/execute", () => {
 
     const app = createTestApp();
     const res = await request(app)
-      .post("/api/skills/999/execute")
+      .post("/skills/999/execute")
       .send({ inputs: { task: "test" } });
 
     expect(res.status).toBe(404);

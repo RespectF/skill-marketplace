@@ -169,7 +169,8 @@ ${skillMd}
 // ─── Route registration ───────────────────────────────────────────────────────
 
 export function registerSkillExecuteRoute(app: Express) {
-  app.post("/api/skills/:id/execute", async (req: Request, res: Response) => {
+  // NOTE: Vercel mounts this at /api/* (via api/index.ts), so /skills here becomes /api/skills externally
+  app.post("/skills/:id/execute", async (req: Request, res: Response) => {
     // ── Auth check ──
     let user = null;
     try {

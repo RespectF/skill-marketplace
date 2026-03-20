@@ -16,16 +16,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 registerOAuthRoutes(app);
 registerSkillExecuteRoute(app);
 
-// Mount tRPC at /api/trpc (matches frontend calls)
-app.use(
-  "/api/trpc",
-  createExpressMiddleware({
-    router: appRouter,
-    createContext,
-  })
-);
-
-// Also mount at /trpc for direct access
+// Mount tRPC at /trpc (Vercel routes /api/* to api/index.ts, so /trpc becomes /api/trpc)
 app.use(
   "/trpc",
   createExpressMiddleware({

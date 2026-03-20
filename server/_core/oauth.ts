@@ -31,7 +31,8 @@ interface GitHubEmail {
 }
 
 export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/github/callback", async (req: Request, res: Response) => {
+  // NOTE: Vercel mounts this at /api/* (via api/index.ts), so /oauth here becomes /api/oauth externally
+  app.get("/oauth/github/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
 
