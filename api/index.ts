@@ -11,21 +11,24 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
   res.status(200).json({ success: true, step: "test-ok" });
 });
 
+// Direct test route at /api/trpc
+app.get("/api/trpc", (_req: VercelRequest, res: VercelResponse) => {
+  console.log("[API] /api/trpc direct route hit!");
+  res.status(200).json({ success: true, at: "direct-route" });
+});
+
 try {
   console.log("[API] Importing appRouter...");
-  const result = require("../server/routers");
-  console.log("[API] require result keys:", Object.keys(result));
-  console.log("[API] appRouter value:", result.appRouter);
-  console.log("[API] appRouter type:", typeof result.appRouter);
+  const { appRouter } = require("../server/routers");
+  console.log("[API] appRouter imported:", typeof appRouter);
 
-  if (!result.appRouter) {
-    console.error("[API] appRouter is undefined or null!");
-    throw new Error("appRouter is " + String(result.appRouter));
+  if (!appRouter) {
+    throw new Error("appRouter is undefined");
   }
 
   console.log("[API] Creating tRPC middleware...");
   const middleware = createExpressMiddleware({
-    router: result.appRouter,
+    router: appRouter,
     createContext: async () => ({}),
     onError({ error, path }) {
       console.error(`[tRPC Error] ${path}:`, error?.message || error);
@@ -41,10 +44,11 @@ try {
 }
 
 app.use((req, res) => {
-  console.log("[API] Unmatched:", req.path);
+  console.log("[API] Unmatched path:", req.path);
   res.status(404).json({ error: "Not found", path: req.path });
 });
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
+  console.log("[API] Handler called for:", req.url);
   app(req, res);
 }
