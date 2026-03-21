@@ -1,7 +1,8 @@
 {
+  "framework": null,
   "buildCommand": "vite build",
   "outputDirectory": "dist/public",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
