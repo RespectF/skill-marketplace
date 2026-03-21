@@ -12,14 +12,31 @@ app.get("/api/test", (_req: VercelRequest, res: VercelResponse) => {
 });
 
 try {
-  console.log("[API] About to import appRouter...");
-  const mod = require("../server/routers");
-  console.log("[API] mod keys:", Object.keys(mod));
-  const { appRouter } = mod;
-  console.log("[API] appRouter type:", typeof appRouter);
-  console.log("[API] appRouter keys:", appRouter ? Object.keys(appRouter) : "undefined");
+  console.log("[API] Importing appRouter...");
+  const { appRouter } = require("../server/routers");
+  console.log("[API] appRouter imported, type:", typeof appRouter);
+
+  if (!appRouter) {
+    console.error("[API] appRouter is undefined!");
+  } else {
+    console.log("[API] Creating tRPC middleware...");
+    app.use(
+      "/api/trpc",
+      createExpressMiddleware({
+        router: appRouter,
+        createContext: async () => {
+          console.log("[API] createContext called");
+          return {};
+        },
+        onError({ error, path }) {
+          console.error(`[tRPC Error] ${path}:`, error?.message || error);
+        },
+      })
+    );
+    console.log("[API] tRPC middleware ready");
+  }
 } catch (err) {
-  console.error("[API] Failed to import appRouter:", err);
+  console.error("[API] Failed to setup tRPC:", err);
 }
 
 app.use((req, res) => {
