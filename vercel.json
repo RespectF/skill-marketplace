@@ -3,12 +3,7 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/[...slug].ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
