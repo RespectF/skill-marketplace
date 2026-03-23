@@ -1,9 +1,14 @@
 {
   "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build && esbuild api/[...slug].ts --platform=node --bundle --format=esm --outfile=api/[...slug].js --minify",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/[...slug].ts": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
