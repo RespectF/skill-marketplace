@@ -1,13 +1,8 @@
 {
-  "framework": null,
+  "framework": "vite",
   "installCommand": "pnpm install",
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/[...slug].ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
