@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "api/[...slug].ts",
+      "src": "dist/api-handler.js",
       "use": "@vercel/node"
     },
     {
@@ -11,12 +11,8 @@
   ],
   "routes": [
     {
-      "src": "/api/([^/]+)",
-      "dest": "/api/[...slug]"
-    },
-    {
-      "src": "/api/([^/]+)/(.+)",
-      "dest": "/api/[...slug]?/$1/$2"
+      "src": "/api/(.*)",
+      "dest": "/dist/api-handler.js"
     },
     {
       "src": "/((?!api/).*)",
