@@ -111,3 +111,4 @@ temp/
 .claude/
 .vercel
 api/[...slug].js
+vercel-api/
