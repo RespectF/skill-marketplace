@@ -6,7 +6,7 @@ import { join } from "path";
 mkdirSync(join(process.cwd(), "vercel-api"), { recursive: true });
 
 await build({
-  entryPoints: ["api/[...slug].ts"],
+  entryPoints: ["api/index.ts"],
   bundle: true,
   platform: "node",
   target: "node18",

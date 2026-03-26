@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "api/[...slug].ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     },
     {
@@ -11,8 +11,12 @@
   ],
   "routes": [
     {
+      "src": "/api/trpc/(.*)",
+      "dest": "/api/index"
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "/api/[...slug]"
+      "dest": "/api/index"
     },
     {
       "src": "/((?!api/).*)",

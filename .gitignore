@@ -111,4 +111,8 @@ temp/
 .claude/
 .vercel
 api/[...slug].js
+api/index.js
+api/package.json
+api/pnpm-lock.yaml
+api/node_modules
 vercel-api/
