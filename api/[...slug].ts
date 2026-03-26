@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import express, { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import serverless from "serverless-http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../server/routers";
@@ -29,8 +29,11 @@ app.use((req: Request, res: Response) => {
 
 const serverlessHandler = serverless(app);
 
-const handler = async (req: VercelRequest, res: VercelResponse) => {
-  return serverlessHandler(req, res);
-};
-
-export default handler;
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await serverlessHandler(req, res);
+  } catch (err) {
+    console.error("[Vercel Handler Error]", err);
+    res.status(500).json({ error: "Internal server error", detail: String(err) });
+  }
+}
