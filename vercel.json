@@ -19,7 +19,11 @@
       "dest": "/api/index"
     },
     {
-      "src": "/((?!api/).*)",
+      "src": "/assets/(.*)",
+      "dest": "/dist/public/assets/$1"
+    },
+    {
+      "src": "/(.*)",
       "dest": "/dist/public/index.html"
     }
   ],
