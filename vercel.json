@@ -1,16 +1,10 @@
 {
-  "builds": [
-    {
-      "src": "dist/api-handler.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "dist/public/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/dist/api-handler.js" },
-    { "src": "/((?!api/).*)", "dest": "/dist/public/index.html" }
+  "framework": "vite",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist/public",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/[...slug]" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
