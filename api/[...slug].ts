@@ -1,39 +1,25 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import express, { type Request, type Response } from "express";
-import serverless from "serverless-http";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 
-const app = express();
-app.use(express.json({ limit: "50mb" }));
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, trpc-batch-mode");
+    res.status(204).end();
+    return;
+  }
 
-app.get("/api/test", (_req: Request, res: Response) => {
-  res.status(200).json({ success: true, step: "test-ok" });
-});
-
-app.use(
-  "/api/trpc",
-  createExpressMiddleware({
+  return fetchRequestHandler({
+    endpoint: "/api/trpc",
+    req,
     router: appRouter,
     createContext,
     onError({ error, path }) {
       console.error(`[tRPC Error] ${path}:`, error?.message || error);
     },
-  })
-);
-
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: "Not found", path: req.path });
-});
-
-const serverlessHandler = serverless(app);
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  try {
-    return await serverlessHandler(req, res);
-  } catch (err) {
-    console.error("[Vercel Handler Error]", err);
-    res.status(500).json({ error: "Internal server error", detail: String(err) });
-  }
+  });
 }
