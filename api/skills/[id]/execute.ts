@@ -1,3 +1,3 @@
-import { handleSkillExecute } from "../../../server/skillExecute.ts";
+import { handleSkillExecute } from "../../../server/skillExecute.js";
 
 export const POST = handleSkillExecute;
