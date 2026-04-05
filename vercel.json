@@ -3,6 +3,10 @@
   "buildCommand": "pnpm build",
   "rewrites": [
     {
+      "source": "/api/trpc/:path*",
+      "destination": "/api"
+    },
+    {
       "source": "/((?!api/.*).*)",
       "destination": "/index.html"
     }
