@@ -1,6 +1,6 @@
-import { getSkillById } from "./db";
-import { ENV } from "./_core/env";
-import { sdk } from "./_core/sdk";
+import { getSkillById } from "./db.js";
+import { ENV } from "./_core/env.js";
+import { sdk } from "./_core/sdk.js";
 
 // ─── Build user message from inputs ──────────────────────────────────────────
 function buildUserMessage(inputs: Record<string, string>): string {

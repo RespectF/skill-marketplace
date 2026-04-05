@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import axios from "axios";
 import { z } from "zod";
-import { SKILL_CATEGORIES } from "../../drizzle/schema";
+import { SKILL_CATEGORIES } from "../../drizzle/schema.js";
 import {
   countSkillsBySlugPrefix,
   createSkill,
@@ -11,9 +11,9 @@ import {
   getSkillList,
   incrementSkillView,
   updateSkill,
-} from "../db";
-import { invokeLLM } from "../_core/llm";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+} from "../db.js";
+import { invokeLLM } from "../_core/llm.js";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
