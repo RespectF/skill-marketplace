@@ -1,39 +1,14 @@
-/**
- * Skill 执行路由 – 通过 SSE 流式返回 LLM 生成结果
- *
- * POST /api/skills/:id/execute
- *   Body: { inputs: Record<string, string> }
- *   Response: text/event-stream (SSE)
- *
- * 将 SKILL.md 作为 system prompt 传给 LLM，用户输入作为 user message，
- * 以流式方式将 LLM 的回复逐 token 推送给前端。
- */
-
-import type { Express, Request, Response } from "express";
 import { getSkillById } from "./db";
 import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
 
-// ─── SSE helpers ──────────────────────────────────────────────────────────────
-
-function sseWrite(res: Response, event: string, data: string) {
-  res.write(`event: ${event}\ndata: ${data}\n\n`);
-}
-
-function sseError(res: Response, message: string) {
-  sseWrite(res, "error", JSON.stringify({ message }));
-  res.end();
-}
-
 // ─── Build user message from inputs ──────────────────────────────────────────
-
 function buildUserMessage(inputs: Record<string, string>): string {
   const entries = Object.entries(inputs).filter(([, v]) => v?.trim());
   if (entries.length === 0) return "请根据你的技能说明执行任务。";
 
   if (entries.length === 1) {
     const [key, value] = entries[0];
-    // If single generic field, just return the value directly
     if (["task", "input", "content", "text", "prompt", "任务描述", "输入内容"].includes(key)) {
       return value;
     }
@@ -44,7 +19,6 @@ function buildUserMessage(inputs: Record<string, string>): string {
 }
 
 // ─── Validate history messages ────────────────────────────────────────────────
-
 type HistoryMessage = { role: "user" | "assistant"; content: string };
 
 function sanitizeHistory(history: unknown): HistoryMessage[] {
@@ -58,21 +32,33 @@ function sanitizeHistory(history: unknown): HistoryMessage[] {
         typeof m.content === "string" &&
         m.content.trim().length > 0
     )
-    .slice(-20); // Keep last 20 messages to avoid token overflow
+    .slice(-20);
 }
 
-// ─── Streaming LLM call ───────────────────────────────────────────────────────
+// ─── Build system prompt from SKILL.md ───────────────────────────────────────
+function buildSystemPrompt(skillTitle: string, skillMd: string): string {
+  return `你是一个专业的 AI 助手，正在执行名为「${skillTitle}」的 Claude Code Skill。
 
+以下是该 Skill 的完整说明文档（SKILL.md）：
+
+---
+${skillMd}
+---
+
+请严格按照上述 Skill 说明的要求和格式，处理用户的输入并生成高质量的输出结果。
+- 直接输出结果，不要解释你在做什么
+- 使用 Markdown 格式让输出更易读
+- 输出语言与用户输入语言保持一致（默认中文）`;
+}
+
+// ─── Streaming LLM call (重构为接受 sseWrite 回调函数) ──────────────────────────
 async function streamLLM(
   systemPrompt: string,
   userMessage: string,
-  res: Response,
-  history: HistoryMessage[] = []
+  history: HistoryMessage[],
+  sseWrite: (event: string, data: string) => void
 ): Promise<void> {
-  // Use custom LLM endpoint (Claude-compatible Anthropic proxy)
   const apiUrl = `${ENV.customLlmApiUrl.replace(/\/$/, "")}/v1/messages`;
-
-  // Build messages array: history + current user message (Anthropic format)
   const historyMessages = history.map((m) => ({ role: m.role, content: m.content }));
 
   const payload = {
@@ -80,10 +66,7 @@ async function streamLLM(
     stream: true,
     max_tokens: 8192,
     system: systemPrompt,
-    messages: [
-      ...historyMessages,
-      { role: "user", content: userMessage },
-    ],
+    messages: [...historyMessages, { role: "user", content: userMessage }],
   };
 
   const response = await fetch(apiUrl, {
@@ -114,113 +97,113 @@ async function streamLLM(
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-
-    // Process complete SSE lines
     const lines = buffer.split("\n");
     buffer = lines.pop() ?? "";
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed) continue;
+      if (!trimmed || !trimmed.startsWith("data:")) continue;
 
-      // Anthropic SSE format: "event: ..." lines followed by "data: {...}" lines
-      // We care about content_block_delta events
-      if (trimmed.startsWith("data:")) {
-        const jsonStr = trimmed.slice(5).trim();
-        if (!jsonStr || jsonStr === "[DONE]") continue;
-        try {
-          const chunk = JSON.parse(jsonStr);
-          // Anthropic streaming: content_block_delta with delta.type = text_delta
-          if (chunk?.type === "content_block_delta" && chunk?.delta?.type === "text_delta") {
-            const text = chunk.delta.text;
-            if (text) sseWrite(res, "delta", JSON.stringify({ text }));
-          }
-          // Also handle thinking_delta (extended thinking) — skip it
-          // Handle OpenAI-compatible format as fallback
-          const openAiDelta = chunk?.choices?.[0]?.delta?.content;
-          if (openAiDelta) {
-            sseWrite(res, "delta", JSON.stringify({ text: openAiDelta }));
-          }
-        } catch {
-          // Skip malformed chunks
+      const jsonStr = trimmed.slice(5).trim();
+      if (!jsonStr || jsonStr === "[DONE]") continue;
+
+      try {
+        const chunk = JSON.parse(jsonStr);
+        if (chunk?.type === "content_block_delta" && chunk?.delta?.type === "text_delta") {
+          const text = chunk.delta.text;
+          if (text) sseWrite("delta", JSON.stringify({ text }));
         }
+        const openAiDelta = chunk?.choices?.[0]?.delta?.content;
+        if (openAiDelta) {
+          sseWrite("delta", JSON.stringify({ text: openAiDelta }));
+        }
+      } catch {
+        // Skip malformed chunks
       }
     }
   }
 }
 
-// ─── Build system prompt from SKILL.md ───────────────────────────────────────
+// ─── 标准 Web Route Handler (替代原来的 app.post) ───────────────────────────────
+export async function handleSkillExecute(req: Request) {
+  // 1. 获取动态路由中的 ID
+  const url = new URL(req.url);
+  // 在 Vercel 中，/api/skills/[id]/execute 这种结构，id 会被注入到 searchParams 中
+  // 如果取不到，尝试从 url.pathname 截取 (兜底处理)
+  let idStr = url.searchParams.get("id");
+  if (!idStr) {
+    const parts = url.pathname.split("/");
+    idStr = parts[parts.indexOf("skills") + 1];
+  }
 
-function buildSystemPrompt(skillTitle: string, skillMd: string): string {
-  return `你是一个专业的 AI 助手，正在执行名为「${skillTitle}」的 Claude Code Skill。
+  const skillId = parseInt(idStr || "", 10);
+  if (isNaN(skillId)) {
+    return Response.json({ error: "无效的技能 ID" }, { status: 400 });
+  }
 
-以下是该 Skill 的完整说明文档（SKILL.md）：
+  // 2. 校验登录
+  try {
+    await sdk.authenticateRequest(req);
+  } catch {
+    return Response.json({ error: "请先登录后再使用技能" }, { status: 401 });
+  }
 
----
-${skillMd}
----
+  // 3. 解析请求体
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch {} // 忽略空 body 报错
 
-请严格按照上述 Skill 说明的要求和格式，处理用户的输入并生成高质量的输出结果。
-- 直接输出结果，不要解释你在做什么
-- 使用 Markdown 格式让输出更易读
-- 输出语言与用户输入语言保持一致（默认中文）`;
-}
+  const inputs: Record<string, string> = body.inputs ?? {};
+  const history = sanitizeHistory(body.history);
 
-// ─── Route registration ───────────────────────────────────────────────────────
+  // 4. 检查技能是否存在
+  const skill = await getSkillById(skillId);
+  if (!skill) {
+    return Response.json({ error: "技能不存在" }, { status: 404 });
+  }
 
-export function registerSkillExecuteRoute(app: Express) {
-  // NOTE: Vercel mounts this at /api/* (via api/index.ts), so /skills here becomes /api/skills externally
-  app.post("/skills/:id/execute", async (req: Request, res: Response) => {
-    // ── Auth check ──
-    let user = null;
-    try {
-      user = await sdk.authenticateRequest(req);
-    } catch {
-      res.status(401).json({ error: "请先登录后再使用技能" });
-      return;
-    }
+  // 5. 构建 SSE 流 (核心重构点)
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      // 封装流式写入方法
+      const sseWrite = (event: string, data: string) => {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${data}\n\n`));
+      };
+      const sseError = (message: string) => {
+        sseWrite("error", JSON.stringify({ message }));
+        controller.close();
+      };
 
-    // ── Parse params ──
-    const skillId = parseInt(req.params.id, 10);
-    if (isNaN(skillId)) {
-      res.status(400).json({ error: "无效的技能 ID" });
-      return;
-    }
+      try {
+        // 发送开始事件
+        sseWrite("start", JSON.stringify({ skillId: skill.id, title: skill.title }));
 
-    const inputs: Record<string, string> = req.body?.inputs ?? {};
-    const history = sanitizeHistory(req.body?.history);
+        const systemPrompt = buildSystemPrompt(skill.title, skill.skillMd);
+        const userMessage = buildUserMessage(inputs);
 
-    // ── Load skill ──
-    const skill = await getSkillById(skillId);
-    if (!skill) {
-      res.status(404).json({ error: "技能不存在" });
-      return;
-    }
+        // 调用流式 LLM
+        await streamLLM(systemPrompt, userMessage, history, sseWrite);
 
-    // ── Set up SSE ──
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-    res.flushHeaders();
+        // 发送完成事件
+        sseWrite("done", JSON.stringify({ success: true }));
+      } catch (err: any) {
+        console.error("[SkillExecute] Error:", err);
+        sseError(err?.message ?? "执行失败，请稍后重试");
+      } finally {
+        // 确保流被关闭
+        try { controller.close(); } catch {}
+      }
+    },
+  });
 
-    // Send start event
-    sseWrite(res, "start", JSON.stringify({ skillId: skill.id, title: skill.title }));
-
-    try {
-      const systemPrompt = buildSystemPrompt(skill.title, skill.skillMd);
-      const userMessage = buildUserMessage(inputs);
-
-      await streamLLM(systemPrompt, userMessage, res, history);
-
-      // Send done event
-      sseWrite(res, "done", JSON.stringify({ success: true }));
-    } catch (err: any) {
-      console.error("[SkillExecute] Error:", err);
-      sseError(res, err?.message ?? "执行失败，请稍后重试");
-      return;
-    }
-
-    res.end();
+  // 返回原生的 Response，并打上 SSE 必要的 Header
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
   });
 }
