@@ -1,10 +1,10 @@
-import { COOKIE_NAME } from "../shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
-import { skillsRouter } from "./routers/skills";
-import { conversationsRouter } from "./routers/conversations";
-import { interactionsRouter } from "./routers/interactions";
+import { COOKIE_NAME } from "../shared/const.js";
+import { getSessionCookieOptions } from "./_core/cookies.js";
+import { systemRouter } from "./_core/systemRouter.js";
+import { publicProcedure, router } from "./_core/trpc.js";
+import { skillsRouter } from "./routers/skills.js";
+import { conversationsRouter } from "./routers/conversations.js";
+import { interactionsRouter } from "./routers/interactions.js";
 
 export const appRouter = router({
   system: systemRouter,

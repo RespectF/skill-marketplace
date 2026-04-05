@@ -1,6 +1,6 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
+import { sdk } from "./sdk.js";
 
 export type TrpcContext = {
   req: Request;              // 替换为标准的 Web Request
