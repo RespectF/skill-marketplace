@@ -13,8 +13,8 @@ import {
   unlikeSkill,
   updateUserProfile,
   upsertUserSkillApiKey,
-} from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+} from "../db.js";
+import { protectedProcedure, router } from "../_core/trpc.js";
 
 export const interactionsRouter = router({
   // ─── Like / Unlike ──────────────────────────────────────────────────────────
