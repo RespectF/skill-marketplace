@@ -1,21 +1,26 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "../server/routers.js";
 import { createContext } from "../server/_core/context.js";
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(req: Request) {
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, trpc-batch-mode");
-    res.status(204).end();
-    return;
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, trpc-batch-mode",
+      },
+    });
   }
 
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
-    res,
     router: appRouter,
     createContext,
     onError({ error, path }) {

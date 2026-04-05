@@ -315,7 +315,10 @@ export const skillsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return getSkillList(input);
+      return getSkillList({
+        ...input,
+        category: input.category ?? undefined, // ✅ 将 null 强转为 undefined
+      });
     }),
 
   /** 获取单个 Skill（by ID） */

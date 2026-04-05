@@ -33,7 +33,7 @@ export async function getDb() {
           rejectUnauthorized: false,
         },
       });
-      _db = drizzle(_pool);
+      _db = drizzle(_pool) as any;
       console.log("[Database] Connection pool created for:", dbUrl.hostname);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
