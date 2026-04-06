@@ -4,11 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ─── Design Token Aliases for @theme inline ─────────────────────────── */
+/* These allow Tailwind classes like "bg-primary" to resolve to CSS vars */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Map semantic color tokens so Tailwind bg-*/text-* utilities work */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -41,6 +45,56 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ─── Spacing Scale (design-system spacing tokens) ─────────────── */
+  /* These enable Tailwind classes like "gap-4" (16px), "p-6" (24px) */
+  /* to respect the design-system 4px grid. */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;  /* 20px */
+  --spacing-6: 1.5rem;   /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;  /* 40px */
+  --spacing-12: 3rem;    /* 48px */
+  --spacing-16: 4rem;    /* 64px */
+  --spacing-20: 5rem;    /* 80px */
+  --spacing-24: 6rem;    /* 96px */
+
+  /* ─── Typography Scale ─────────────────────────────────────────── */
+  --text-xs:    0.75rem;    /* 12px */
+  --text-sm:    0.875rem;   /* 14px */
+  --text-base:  1rem;       /* 16px */
+  --text-lg:    1.125rem;   /* 18px */
+  --text-xl:    1.25rem;    /* 20px */
+  --text-2xl:   1.5rem;     /* 24px */
+  --text-3xl:   1.875rem;   /* 30px */
+  --text-4xl:   2.25rem;    /* 36px */
+
+  /* ─── Line Heights ─────────────────────────────────────────────── */
+  --leading-tight:   1.25;
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+
+  /* ─── Duration / Motion ────────────────────────────────────────── */
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   350ms;
+  --duration-slower: 500ms;
+
+  /* ─── Ease Curves ─────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─── Max Widths ───────────────────────────────────────────────── */
+  --max-width-container: 1280px;
+  --max-width-content:   768px;
+  --max-width-dialog:    560px;
+  --max-width-sheet:     480px;
 }
 
 :root {
@@ -111,6 +165,79 @@
   --sidebar-border:      oklch(0.92 0.004 286.32);
   --sidebar-ring:        oklch(0.623 0.214 259.815);
 
+  /* ─── Surface Tokens ─────────────────────────────────────────────── */
+  --surface:        oklch(1 0 0);
+  --surface-raised: oklch(0.98 0.002 286.375);
+
+  /* ─── Semantic (success / warning / info) ───────────────────────── */
+  --success:          oklch(0.65 0.2 145);
+  --success-light:    oklch(0.93 0.08 145);
+  --warning:          oklch(0.75 0.18 80);
+  --warning-light:    oklch(0.95 0.1 80);
+  --info:             oklch(0.60 0.18 250);
+  --info-light:       oklch(0.93 0.06 250);
+
+  /* ─── Border Strength ───────────────────────────────────────────── */
+  --border-strong: oklch(0.82 0.006 286.32);
+
+  /* ─── Neutral Scale ─────────────────────────────────────────────── */
+  --neutral-50:  oklch(0.99 0 0);
+  --neutral-100: oklch(0.96 0 0);
+  --neutral-200: oklch(0.92 0 0);
+  --neutral-300: oklch(0.82 0 0);
+  --neutral-400: oklch(0.65 0 0);
+  --neutral-500: oklch(0.45 0 0);
+  --neutral-600: oklch(0.35 0 0);
+  --neutral-700: oklch(0.25 0 0);
+  --neutral-800: oklch(0.15 0 0);
+  --neutral-900: oklch(0.10 0 0);
+
+  /* ─── Font Families ─────────────────────────────────────────────── */
+  --font-sans: "Inter", "Noto Sans SC", ui-sans, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+
+  /* ─── Font Weights ──────────────────────────────────────────────── */
+  --font-regular:  400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+
+  /* ─── Theme Colors (Card Themes) ───────────────────────────────── */
+  --theme-purple-gradient-from: oklch(0.93 0.06 270);
+  --theme-purple-gradient-to:   oklch(0.95 0.04 270);
+  --theme-purple-icon-bg:       oklch(0.93 0.06 270);
+  --theme-purple-accent:        oklch(0.42 0.18 270);
+
+  --theme-blue-gradient-from:  oklch(0.93 0.06 265);
+  --theme-blue-gradient-to:    oklch(0.95 0.04 265);
+  --theme-blue-icon-bg:        oklch(0.93 0.06 265);
+  --theme-blue-accent:         oklch(0.42 0.18 265);
+
+  --theme-green-gradient-from: oklch(0.93 0.06 145);
+  --theme-green-gradient-to:   oklch(0.95 0.04 145);
+  --theme-green-icon-bg:       oklch(0.93 0.06 145);
+  --theme-green-accent:        oklch(0.42 0.18 145);
+
+  --theme-orange-gradient-from: oklch(0.95 0.08 50);
+  --theme-orange-gradient-to:   oklch(0.97 0.05 50);
+  --theme-orange-icon-bg:       oklch(0.95 0.08 50);
+  --theme-orange-accent:        oklch(0.50 0.15 50);
+
+  --theme-pink-gradient-from:  oklch(0.93 0.06 350);
+  --theme-pink-gradient-to:    oklch(0.95 0.04 350);
+  --theme-pink-icon-bg:        oklch(0.93 0.06 350);
+  --theme-pink-accent:         oklch(0.42 0.18 350);
+
+  --theme-teal-gradient-from:  oklch(0.93 0.06 195);
+  --theme-teal-gradient-to:    oklch(0.95 0.04 195);
+  --theme-teal-icon-bg:        oklch(0.93 0.06 195);
+  --theme-teal-accent:         oklch(0.42 0.18 195);
+
+  --theme-red-gradient-from:   oklch(0.93 0.06 25);
+  --theme-red-gradient-to:     oklch(0.95 0.04 25);
+  --theme-red-icon-bg:         oklch(0.93 0.06 25);
+  --theme-red-accent:          oklch(0.42 0.18 25);
+
   /* ─── Shadow Scale ────────────────────────────────────────────── */
   --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
@@ -156,8 +283,21 @@
 
   /* ─── Border / Input / Ring ────────────────────────────────────── */
   --border:     oklch(1 0 0 / 10%);
+  --border-strong: oklch(1 0 0 / 20%);
   --input:      oklch(1 0 0 / 15%);
   --ring:       oklch(0.488 0.243 264.376);
+
+  /* ─── Surface ─────────────────────────────────────────────────── */
+  --surface:        oklch(0.21 0.006 285.885);
+  --surface-raised: oklch(0.27 0.006 285.885);
+
+  /* ─── Semantic ──────────────────────────────────────────────── */
+  --success:         oklch(0.70 0.18 145);
+  --success-light:   oklch(0.30 0.08 145);
+  --warning:         oklch(0.80 0.15 80);
+  --warning-light:   oklch(0.30 0.08 80);
+  --info:            oklch(0.70 0.15 250);
+  --info-light:      oklch(0.30 0.06 250);
 
   /* ─── Sidebar ─────────────────────────────────────────────────── */
   --sidebar:              oklch(0.21 0.006 285.885);
@@ -186,6 +326,8 @@
     font-family: "Inter", "Noto Sans SC", ui-sans, system-ui, sans-serif;
     /* 防止 100vw 引起的横向滚动 */
     overflow-x: hidden;
+    /* 全局平滑滚动 */
+    scroll-behavior: smooth;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -236,12 +378,17 @@
   /* ─── Skill Card ───────────────────────────────────────────────── */
   .skill-card {
     transition:
-      transform 150ms ease-out,
-      box-shadow 150ms ease-out;
+      transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+    cursor: pointer;
   }
   .skill-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md); /* 替换魔法数字 0 8px 24px */
+    box-shadow: var(--shadow-md);
+  }
+  .skill-card:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-sm);
   }
 
   /* ─── Category Badge Colors ─────────────────────────────────────── */
@@ -271,6 +418,23 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* ─── Scrollbar Styling ─────────────────────────────────────────── */
+  /* 全局统一滚动条样式 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.82 0 0);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.65 0 0);
   }
 
   /* ─── Scrollbar Hide Utility ───────────────────────────────────── */

@@ -10,15 +10,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useState, useRef } from "react";
+import {
+  ArrowLeft,
+  Loader2,
+  Sparkles,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { useState, useRef, useId } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
-const CATEGORIES = ["创意设计", "开发技术", "企业通信", "文档处理", "工具"] as const;
+const CATEGORIES = [
+  "创意设计",
+  "开发技术",
+  "企业通信",
+  "文档处理",
+  "工具",
+] as const;
 
 type FieldErrors = Partial<Record<keyof SkillFormData, string>>;
 
@@ -49,7 +61,7 @@ function ParseProgress({ step, error }: { step: ParseStep; error: string }) {
     { key: "done", label: "完成" },
   ];
 
-  const stepIndex = steps.findIndex((s) => s.key === step);
+  const stepIndex = steps.findIndex(s => s.key === step);
   const doneIndex = step === "done" ? steps.length : stepIndex;
 
   if (step === "error") {
@@ -64,31 +76,45 @@ function ParseProgress({ step, error }: { step: ParseStep; error: string }) {
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
       <div className="flex items-center gap-3 mb-2">
-        {step !== "done" && <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />}
-        {step === "done" && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />}
-        <span className="text-sm font-medium text-blue-800">{STEP_LABELS[step]}</span>
+        {step !== "done" && (
+          <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+        )}
+        {step === "done" && (
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+        )}
+        <span className="text-sm font-medium text-blue-800">
+          {STEP_LABELS[step]}
+        </span>
       </div>
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 text-xs ${
-              i < doneIndex
-                ? "text-green-700"
-                : i === stepIndex
-                ? "text-blue-700 font-medium"
-                : "text-blue-300"
-            }`}>
+            <div
+              className={`flex items-center gap-1.5 text-xs ${
+                i < doneIndex
+                  ? "text-green-700"
+                  : i === stepIndex
+                    ? "text-blue-700 font-medium"
+                    : "text-blue-300"
+              }`}
+            >
               {i < doneIndex ? (
                 <CheckCircle2 className="w-3 h-3" />
               ) : (
-                <div className={`w-3 h-3 rounded-full border ${
-                  i === stepIndex ? "border-blue-600 bg-blue-600" : "border-blue-300"
-                }`} />
+                <div
+                  className={`w-3 h-3 rounded-full border ${
+                    i === stepIndex
+                      ? "border-blue-600 bg-blue-600"
+                      : "border-blue-300"
+                  }`}
+                />
               )}
               {s.label}
             </div>
             {i < steps.length - 1 && (
-              <div className={`w-4 h-px ${i < doneIndex ? "bg-green-400" : "bg-blue-200"}`} />
+              <div
+                className={`w-4 h-px ${i < doneIndex ? "bg-green-400" : "bg-blue-200"}`}
+              />
             )}
           </div>
         ))}
@@ -128,9 +154,13 @@ export default function EditSkill() {
         <Navbar />
         <div className="container py-24 text-center">
           <div className="text-5xl mb-4">404</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Skill 不存在</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Skill 不存在
+          </h2>
           <p className="text-muted-foreground mb-6">该技能可能已被删除</p>
-          <Button onClick={() => setLocation("/my-skills")}>返回我的技能</Button>
+          <Button onClick={() => setLocation("/my-skills")}>
+            返回我的技能
+          </Button>
         </div>
       </div>
     );
@@ -148,7 +178,11 @@ function EditSkillContent({
   user: { id: number; role: string } | null;
   setLocation: (path: string) => void;
 }) {
-  const { data: skill, isLoading, error } = trpc.skills.getById.useQuery({ id });
+  const {
+    data: skill,
+    isLoading,
+    error,
+  } = trpc.skills.getById.useQuery({ id });
 
   if (isLoading) {
     return (
@@ -168,9 +202,13 @@ function EditSkillContent({
         <Navbar />
         <div className="container py-24 text-center">
           <div className="text-5xl mb-4">404</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Skill 不存在</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Skill 不存在
+          </h2>
           <p className="text-muted-foreground mb-6">该技能可能已被删除</p>
-          <Button onClick={() => setLocation("/my-skills")}>返回我的技能</Button>
+          <Button onClick={() => setLocation("/my-skills")}>
+            返回我的技能
+          </Button>
         </div>
       </div>
     );
@@ -183,8 +221,12 @@ function EditSkillContent({
         <div className="container py-24 text-center">
           <div className="text-5xl mb-4">🚫</div>
           <h2 className="text-2xl font-bold text-foreground mb-2">无权访问</h2>
-          <p className="text-muted-foreground mb-6">只有作者或管理员可以编辑此技能</p>
-          <Button onClick={() => setLocation("/my-skills")}>返回我的技能</Button>
+          <p className="text-muted-foreground mb-6">
+            只有作者或管理员可以编辑此技能
+          </p>
+          <Button onClick={() => setLocation("/my-skills")}>
+            返回我的技能
+          </Button>
         </div>
       </div>
     );
@@ -218,7 +260,13 @@ function EditSkillContent({
 // ─── Edit Form ───────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: string) => void }) {
+function EditForm({
+  skill,
+  setLocation,
+}: {
+  skill: any;
+  setLocation: (path: string) => void;
+}) {
   const originalSkillMd = skill.skillMd ?? "";
   const [skillMdChanged, setSkillMdChanged] = useState(false);
   const [form, setForm] = useState<SkillFormData>({
@@ -232,15 +280,19 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
   const [parseStep, setParseStep] = useState<ParseStep>("idle");
   const [parseError, setParseError] = useState("");
   const inferTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevent double submission
+  const isSubmittingRef = useRef(false);
 
   const parseGitHub = trpc.skills.parseGitHub.useMutation();
   const updateMutation = trpc.skills.update.useMutation({
-    onSuccess: (updated) => {
+    onSuccess: updated => {
       toast.success("技能更新成功！");
+      isSubmittingRef.current = false;
       if (updated?.slug) setLocation(`/skill/${updated.slug}`);
     },
-    onError: (e) => {
+    onError: e => {
       toast.error(e.message ?? "更新失败");
+      isSubmittingRef.current = false;
     },
   });
 
@@ -252,10 +304,12 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
     try {
       const timer = setTimeout(() => setParseStep("inferring"), 2000);
       inferTimerRef.current = timer;
-      const result = await parseGitHub.mutateAsync({ githubUrl: form.githubUrl });
+      const result = await parseGitHub.mutateAsync({
+        githubUrl: form.githubUrl,
+      });
       clearTimeout(timer);
       inferTimerRef.current = null;
-      setForm((p) => ({
+      setForm(p => ({
         ...p,
         skillMd: result.skillMd,
         title: result.name || p.title,
@@ -277,6 +331,9 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     const errors: FieldErrors = {};
     if (!form.title) errors.title = "请输入技能名称";
     if (!form.description) errors.description = "请输入技能描述";
@@ -285,6 +342,7 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      isSubmittingRef.current = false;
       return;
     }
     setFieldErrors({});
@@ -294,7 +352,7 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
       id: skill.id,
       title: form.title,
       description: form.description,
-      category: form.category as typeof CATEGORIES[number],
+      category: form.category as (typeof CATEGORIES)[number],
       skillMd: form.skillMd,
       githubUrl: form.githubUrl || undefined,
     });
@@ -311,8 +369,8 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
           <Input
             placeholder="https://github.com/owner/repo"
             value={form.githubUrl}
-            onChange={(e) => {
-              setForm((p) => ({ ...p, githubUrl: e.target.value }));
+            onChange={e => {
+              setForm(p => ({ ...p, githubUrl: e.target.value }));
               setParseStep("idle");
             }}
             className="flex-1 text-sm"
@@ -337,7 +395,11 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
       <ParseProgress step={parseStep} error={parseError} />
 
       {/* Common Fields */}
-      <EditCommonFields form={form} setForm={setForm} fieldErrors={fieldErrors} />
+      <EditCommonFields
+        form={form}
+        setForm={setForm}
+        fieldErrors={fieldErrors}
+      />
 
       {/* SKILL.md Content */}
       <div>
@@ -348,7 +410,7 @@ function EditForm({ skill, setLocation }: { skill: any; setLocation: (path: stri
           <button
             type="button"
             onClick={() =>
-              setForm((p) => ({
+              setForm(p => ({
                 ...p,
                 skillMd: `---
 name: ${p.title.toLowerCase().replace(/\s+/g, "-")}
@@ -371,9 +433,11 @@ description: ${p.description}
         </div>
         <Textarea
           value={form.skillMd}
-          onChange={(e) => setForm((p) => ({ ...p, skillMd: e.target.value }))}
+          onChange={e => setForm(p => ({ ...p, skillMd: e.target.value }))}
           className={`min-h-[240px] font-mono text-xs ${
-            fieldErrors?.skillMd ? "border-destructive aria-invalid:bg-destructive/5" : ""
+            fieldErrors?.skillMd
+              ? "border-destructive aria-invalid:bg-destructive/5"
+              : ""
           }`}
           aria-invalid={!!fieldErrors?.skillMd}
         />
@@ -391,7 +455,12 @@ description: ${p.description}
         <div className="container max-w-3xl py-4 flex items-center gap-4">
           <Button
             type="submit"
-            disabled={updateMutation.isPending || !form.title || !form.category || !form.skillMd}
+            disabled={
+              updateMutation.isPending ||
+              !form.title ||
+              !form.category ||
+              !form.skillMd
+            }
             className="flex-1 gap-2"
             size="lg"
           >
@@ -427,6 +496,11 @@ function EditCommonFields({
   setForm: (fn: (p: SkillFormData) => SkillFormData) => void;
   fieldErrors?: FieldErrors;
 }) {
+  const id = useId();
+  const titleErrorId = `${id}-title-error`;
+  const descErrorId = `${id}-desc-error`;
+  const catErrorId = `${id}-cat-error`;
+
   return (
     <>
       <div>
@@ -436,13 +510,16 @@ function EditCommonFields({
         <Input
           placeholder="例如：AI 代码审查助手"
           value={form.title}
-          onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+          onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
           className={`text-sm ${fieldErrors?.title ? "border-destructive aria-invalid:bg-destructive/5" : ""}`}
           maxLength={128}
           aria-invalid={!!fieldErrors?.title}
+          aria-describedby={fieldErrors?.title ? titleErrorId : undefined}
         />
         {fieldErrors?.title && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.title}</p>
+          <p id={titleErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.title}
+          </p>
         )}
       </div>
 
@@ -453,15 +530,20 @@ function EditCommonFields({
         <Textarea
           placeholder="简要描述这个技能的功能和使用场景..."
           value={form.description}
-          onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+          onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
           className={`min-h-[80px] resize-none text-sm ${
-            fieldErrors?.description ? "border-destructive aria-invalid:bg-destructive/5" : ""
+            fieldErrors?.description
+              ? "border-destructive aria-invalid:bg-destructive/5"
+              : ""
           }`}
           aria-invalid={!!fieldErrors?.description}
+          aria-describedby={fieldErrors?.description ? descErrorId : undefined}
           maxLength={500}
         />
         {fieldErrors?.description && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.description}</p>
+          <p id={descErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.description}
+          </p>
         )}
       </div>
 
@@ -471,16 +553,17 @@ function EditCommonFields({
         </Label>
         <Select
           value={form.category}
-          onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}
+          onValueChange={v => setForm(p => ({ ...p, category: v }))}
         >
           <SelectTrigger
             className={`text-sm ${fieldErrors?.category ? "border-destructive" : ""}`}
             aria-invalid={!!fieldErrors?.category}
+            aria-describedby={fieldErrors?.category ? catErrorId : undefined}
           >
             <SelectValue placeholder="选择分类" />
           </SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map((cat) => (
+            {CATEGORIES.map(cat => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
@@ -488,7 +571,9 @@ function EditCommonFields({
           </SelectContent>
         </Select>
         {fieldErrors?.category && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.category}</p>
+          <p id={catErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.category}
+          </p>
         )}
       </div>
     </>

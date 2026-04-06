@@ -22,14 +22,20 @@ import {
   AlertCircle,
   Tag,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useId } from "react";
 import { Link, useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 
-const CATEGORIES = ["创意设计", "开发技术", "企业通信", "文档处理", "工具"] as const;
+const CATEGORIES = [
+  "创意设计",
+  "开发技术",
+  "企业通信",
+  "文档处理",
+  "工具",
+] as const;
 
 type FieldErrors = Partial<Record<keyof SkillFormData, string>>;
 
@@ -72,7 +78,7 @@ function ParseProgress({ step, error }: { step: ParseStep; error: string }) {
     { key: "done", label: "完成" },
   ];
 
-  const stepIndex = steps.findIndex((s) => s.key === step);
+  const stepIndex = steps.findIndex(s => s.key === step);
   const doneIndex = step === "done" ? steps.length : stepIndex;
 
   if (step === "error") {
@@ -87,31 +93,45 @@ function ParseProgress({ step, error }: { step: ParseStep; error: string }) {
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
       <div className="flex items-center gap-3 mb-2">
-        {step !== "done" && <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />}
-        {step === "done" && <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />}
-        <span className="text-sm font-medium text-blue-800">{STEP_LABELS[step]}</span>
+        {step !== "done" && (
+          <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+        )}
+        {step === "done" && (
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+        )}
+        <span className="text-sm font-medium text-blue-800">
+          {STEP_LABELS[step]}
+        </span>
       </div>
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 text-xs ${
-              i < doneIndex
-                ? "text-green-700"
-                : i === stepIndex
-                ? "text-blue-700 font-medium"
-                : "text-blue-300"
-            }`}>
+            <div
+              className={`flex items-center gap-1.5 text-xs ${
+                i < doneIndex
+                  ? "text-green-700"
+                  : i === stepIndex
+                    ? "text-blue-700 font-medium"
+                    : "text-blue-300"
+              }`}
+            >
               {i < doneIndex ? (
                 <CheckCircle2 className="w-3 h-3" />
               ) : (
-                <div className={`w-3 h-3 rounded-full border ${
-                  i === stepIndex ? "border-blue-600 bg-blue-600" : "border-blue-300"
-                }`} />
+                <div
+                  className={`w-3 h-3 rounded-full border ${
+                    i === stepIndex
+                      ? "border-blue-600 bg-blue-600"
+                      : "border-blue-300"
+                  }`}
+                />
               )}
               {s.label}
             </div>
             {i < steps.length - 1 && (
-              <div className={`w-4 h-px ${i < doneIndex ? "bg-green-400" : "bg-blue-200"}`} />
+              <div
+                className={`w-4 h-px ${i < doneIndex ? "bg-green-400" : "bg-blue-200"}`}
+              />
             )}
           </div>
         ))}
@@ -133,7 +153,9 @@ export default function CreateSkill() {
         <div className="container py-24 text-center">
           <div className="text-5xl mb-4">🔐</div>
           <h2 className="text-2xl font-bold text-foreground mb-2">请先登录</h2>
-          <p className="text-muted-foreground mb-6">登录后即可创建和分享你的 Skill</p>
+          <p className="text-muted-foreground mb-6">
+            登录后即可创建和分享你的 Skill
+          </p>
           <Button asChild>
             <a href={getLoginUrl()}>立即登录</a>
           </Button>
@@ -181,17 +203,26 @@ export default function CreateSkill() {
 
           {/* GitHub Import */}
           <TabsContent value="github">
-            <GitHubImportForm key="github" onSuccess={(slug) => setLocation(`/skill/${slug}`)} />
+            <GitHubImportForm
+              key="github"
+              onSuccess={slug => setLocation(`/skill/${slug}`)}
+            />
           </TabsContent>
 
           {/* Manual Form */}
           <TabsContent value="form">
-            <ManualForm key="form" onSuccess={(slug) => setLocation(`/skill/${slug}`)} />
+            <ManualForm
+              key="form"
+              onSuccess={slug => setLocation(`/skill/${slug}`)}
+            />
           </TabsContent>
 
           {/* File Upload */}
           <TabsContent value="upload">
-            <FileUploadForm key="upload" onSuccess={(slug) => setLocation(`/skill/${slug}`)} />
+            <FileUploadForm
+              key="upload"
+              onSuccess={slug => setLocation(`/skill/${slug}`)}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -201,7 +232,11 @@ export default function CreateSkill() {
 
 // ─── GitHub Import Form ───────────────────────────────────────────────────────
 
-function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
+function GitHubImportForm({
+  onSuccess,
+}: {
+  onSuccess: (slug: string) => void;
+}) {
   const [githubUrl, setGithubUrl] = useState("");
   const [form, setForm] = useState<Omit<SkillFormData, "githubUrl">>({
     title: "",
@@ -212,6 +247,7 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
   const [parsed, setParsed] = useState(false);
   const [parseStep, setParseStep] = useState<ParseStep>("idle");
   const [parseError, setParseError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const inferTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const parseGitHub = trpc.skills.parseGitHub.useMutation();
@@ -238,7 +274,7 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
         inferTimerRef.current = null;
       }
 
-      setForm((p) => ({
+      setForm(p => ({
         ...p,
         skillMd: result.skillMd,
         title: result.name || p.title,
@@ -261,10 +297,18 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.description || !form.category || !form.skillMd) {
-      toast.error("请填写所有必填字段");
+    const errors: FieldErrors = {};
+    if (!githubUrl.trim()) errors.githubUrl = "请输入 GitHub 仓库链接";
+    if (!form.title) errors.title = "请输入技能名称";
+    if (!form.description) errors.description = "请输入技能描述";
+    if (!form.category) errors.category = "请选择技能分类";
+    if (!form.skillMd) errors.skillMd = "请填写 SKILL.md 内容";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
     try {
       const result = await importMutation.mutateAsync({
         githubUrl,
@@ -284,8 +328,18 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
         <p className="font-medium mb-1.5">📌 支持的链接格式</p>
         <ul className="text-blue-600 leading-relaxed space-y-1">
-          <li>✅ 具体 Skill 子目录：<code className="bg-blue-100 px-1 rounded text-xs">https://github.com/anthropics/skills/tree/main/skills/xlsx</code></li>
-          <li>✅ 包含 SKILL.md 的仓库根：<code className="bg-blue-100 px-1 rounded text-xs">https://github.com/owner/my-skill-repo</code></li>
+          <li>
+            ✅ 具体 Skill 子目录：
+            <code className="bg-blue-100 px-1 rounded text-xs">
+              https://github.com/anthropics/skills/tree/main/skills/xlsx
+            </code>
+          </li>
+          <li>
+            ✅ 包含 SKILL.md 的仓库根：
+            <code className="bg-blue-100 px-1 rounded text-xs">
+              https://github.com/owner/my-skill-repo
+            </code>
+          </li>
           <li>⚠️ 如果仓库包含多个 Skill，建议直接链接到具体 Skill 子目录</li>
         </ul>
       </div>
@@ -299,8 +353,12 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
           <Input
             placeholder="https://github.com/anthropics/skills/tree/main/skills/xlsx"
             value={githubUrl}
-            onChange={(e) => { setGithubUrl(e.target.value); setParseStep("idle"); }}
-            className="flex-1 text-sm"
+            onChange={e => {
+              setGithubUrl(e.target.value);
+              setParseStep("idle");
+            }}
+            className={`flex-1 text-sm ${fieldErrors?.githubUrl ? "border-destructive" : ""}`}
+            aria-invalid={!!fieldErrors?.githubUrl}
           />
           <Button
             type="button"
@@ -316,6 +374,11 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
             )}
           </Button>
         </div>
+        {fieldErrors?.githubUrl && (
+          <p className="text-xs text-destructive mt-1">
+            {fieldErrors.githubUrl}
+          </p>
+        )}
       </div>
 
       {/* Progress indicator */}
@@ -323,16 +386,18 @@ function GitHubImportForm({ onSuccess }: { onSuccess: (slug: string) => void }) 
 
       {/* Common Fields — shown after parse */}
       {(parsed || parseStep === "error") && (
-        <CommonFields form={form} setForm={setForm} />
+        <CommonFields form={form} setForm={setForm} fieldErrors={fieldErrors} />
       )}
 
       {/* SKILL.md Preview */}
       {form.skillMd && (
         <div>
-          <Label className="text-sm font-medium mb-1.5 block">SKILL.md 内容预览</Label>
+          <Label className="text-sm font-medium mb-1.5 block">
+            SKILL.md 内容预览
+          </Label>
           <Textarea
             value={form.skillMd}
-            onChange={(e) => setForm((p) => ({ ...p, skillMd: e.target.value }))}
+            onChange={e => setForm(p => ({ ...p, skillMd: e.target.value }))}
             className="min-h-[200px] font-mono text-xs"
           />
         </div>
@@ -411,7 +476,7 @@ description: A clear description of what this skill does and when to use it
           </Label>
           <button
             type="button"
-            onClick={() => setForm((p) => ({ ...p, skillMd: SKILL_MD_TEMPLATE }))}
+            onClick={() => setForm(p => ({ ...p, skillMd: SKILL_MD_TEMPLATE }))}
             className="text-xs text-primary hover:underline"
           >
             使用模板
@@ -420,7 +485,7 @@ description: A clear description of what this skill does and when to use it
         <Textarea
           placeholder={SKILL_MD_TEMPLATE}
           value={form.skillMd}
-          onChange={(e) => setForm((p) => ({ ...p, skillMd: e.target.value }))}
+          onChange={e => setForm(p => ({ ...p, skillMd: e.target.value }))}
           className={`min-h-[240px] font-mono text-xs ${fieldErrors?.skillMd ? "border-destructive" : ""}`}
           aria-invalid={!!fieldErrors?.skillMd}
         />
@@ -435,11 +500,13 @@ description: A clear description of what this skill does and when to use it
 
       {/* GitHub URL (optional) */}
       <div>
-        <Label className="text-sm font-medium mb-1.5 block">GitHub 链接（可选）</Label>
+        <Label className="text-sm font-medium mb-1.5 block">
+          GitHub 链接（可选）
+        </Label>
         <Input
           placeholder="https://github.com/your/repo"
           value={form.githubUrl}
-          onChange={(e) => setForm((p) => ({ ...p, githubUrl: e.target.value }))}
+          onChange={e => setForm(p => ({ ...p, githubUrl: e.target.value }))}
           className="text-sm"
           maxLength={300}
         />
@@ -460,6 +527,7 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
   const [form, setForm] = useState<SkillFormData>(EMPTY_FORM);
   const [fileName, setFileName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const createMutation = trpc.skills.create.useMutation();
 
@@ -470,19 +538,22 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
     }
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       const content = e.target?.result as string;
-      setForm((p) => ({ ...p, skillMd: content }));
+      setForm(p => ({ ...p, skillMd: content }));
 
       // Auto-parse name and description from frontmatter
       const nameMatch = content.match(/^name:\s*(.+)$/m);
-      const descMatch = content.match(/^description:\s*([\s\S]+?)(?=\n\w|---|\n#|$)/m);
+      const descMatch = content.match(
+        /^description:\s*([\s\S]+?)(?=\n\w|---|\n#|$)/m
+      );
       if (nameMatch?.[1]) {
-        setForm((p) => ({
+        setForm(p => ({
           ...p,
           skillMd: content,
           title: p.title || nameMatch[1].trim(),
-          description: p.description || (descMatch?.[1]?.trim().replace(/\n/g, " ") ?? ""),
+          description:
+            p.description || (descMatch?.[1]?.trim().replace(/\n/g, " ") ?? ""),
         }));
       }
       toast.success(`已加载 ${file.name}`);
@@ -499,10 +570,17 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.description || !form.category || !form.skillMd) {
-      toast.error("请填写所有必填字段");
+    const errors: FieldErrors = {};
+    if (!form.title) errors.title = "请输入技能名称";
+    if (!form.description) errors.description = "请输入技能描述";
+    if (!form.category) errors.category = "请选择技能分类";
+    if (!form.skillMd) errors.skillMd = "请上传 SKILL.md 文件";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
     try {
       const result = await createMutation.mutateAsync({
         title: form.title,
@@ -521,7 +599,10 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Drop Zone */}
       <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragOver={e => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
@@ -529,8 +610,8 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
           isDragging
             ? "border-primary bg-primary/5"
             : fileName
-            ? "border-green-400 bg-green-50"
-            : "border-border hover:border-primary/50 hover:bg-muted/30"
+              ? "border-green-400 bg-green-50"
+              : "border-border hover:border-primary/50 hover:bg-muted/30"
         }`}
       >
         <input
@@ -538,7 +619,7 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
           type="file"
           accept=".md"
           className="hidden"
-          onChange={(e) => {
+          onChange={e => {
             const file = e.target.files?.[0];
             if (file) handleFile(file);
           }}
@@ -552,22 +633,26 @@ function FileUploadForm({ onSuccess }: { onSuccess: (slug: string) => void }) {
         ) : (
           <div className="space-y-2">
             <Upload className="w-10 h-10 text-muted-foreground mx-auto" />
-            <p className="font-medium text-foreground">拖拽或点击上传 SKILL.md</p>
+            <p className="font-medium text-foreground">
+              拖拽或点击上传 SKILL.md
+            </p>
             <p className="text-xs text-muted-foreground">支持 .md 格式文件</p>
           </div>
         )}
       </div>
 
       {/* Common Fields */}
-      <CommonFields form={form} setForm={setForm} />
+      <CommonFields form={form} setForm={setForm} fieldErrors={fieldErrors} />
 
       {/* Preview */}
       {form.skillMd && (
         <div>
-          <Label className="text-sm font-medium mb-1.5 block">文件内容预览</Label>
+          <Label className="text-sm font-medium mb-1.5 block">
+            文件内容预览
+          </Label>
           <Textarea
             value={form.skillMd}
-            onChange={(e) => setForm((p) => ({ ...p, skillMd: e.target.value }))}
+            onChange={e => setForm(p => ({ ...p, skillMd: e.target.value }))}
             className="min-h-[160px] font-mono text-xs"
           />
         </div>
@@ -593,6 +678,11 @@ function CommonFields({
   setForm: (fn: (p: any) => any) => void;
   fieldErrors?: FieldErrors;
 }) {
+  const id = useId();
+  const titleErrorId = `${id}-title-error`;
+  const descErrorId = `${id}-desc-error`;
+  const catErrorId = `${id}-cat-error`;
+
   return (
     <>
       <div>
@@ -602,13 +692,16 @@ function CommonFields({
         <Input
           placeholder="例如：AI 代码审查助手"
           value={form.title}
-          onChange={(e) => setForm((p: any) => ({ ...p, title: e.target.value }))}
+          onChange={e => setForm((p: any) => ({ ...p, title: e.target.value }))}
           className={`text-sm ${fieldErrors?.title ? "border-destructive aria-invalid:bg-destructive/5" : ""}`}
           maxLength={128}
           aria-invalid={!!fieldErrors?.title}
+          aria-describedby={fieldErrors?.title ? titleErrorId : undefined}
         />
         {fieldErrors?.title && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.title}</p>
+          <p id={titleErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.title}
+          </p>
         )}
       </div>
 
@@ -619,13 +712,18 @@ function CommonFields({
         <Textarea
           placeholder="简要描述这个技能的功能和使用场景..."
           value={form.description}
-          onChange={(e) => setForm((p: any) => ({ ...p, description: e.target.value }))}
+          onChange={e =>
+            setForm((p: any) => ({ ...p, description: e.target.value }))
+          }
           className={`min-h-[80px] resize-none text-sm ${fieldErrors?.description ? "border-destructive aria-invalid:bg-destructive/5" : ""}`}
           aria-invalid={!!fieldErrors?.description}
+          aria-describedby={fieldErrors?.description ? descErrorId : undefined}
           maxLength={500}
         />
         {fieldErrors?.description && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.description}</p>
+          <p id={descErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.description}
+          </p>
         )}
       </div>
 
@@ -635,13 +733,17 @@ function CommonFields({
         </Label>
         <Select
           value={form.category}
-          onValueChange={(v) => setForm((p: any) => ({ ...p, category: v }))}
+          onValueChange={v => setForm((p: any) => ({ ...p, category: v }))}
         >
-          <SelectTrigger className={`text-sm ${fieldErrors?.category ? "border-destructive" : ""}`} aria-invalid={!!fieldErrors?.category}>
+          <SelectTrigger
+            className={`text-sm ${fieldErrors?.category ? "border-destructive" : ""}`}
+            aria-invalid={!!fieldErrors?.category}
+            aria-describedby={fieldErrors?.category ? catErrorId : undefined}
+          >
             <SelectValue placeholder="选择分类" />
           </SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map((cat) => (
+            {CATEGORIES.map(cat => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
@@ -649,7 +751,9 @@ function CommonFields({
           </SelectContent>
         </Select>
         {fieldErrors?.category && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.category}</p>
+          <p id={catErrorId} className="text-xs text-destructive mt-1">
+            {fieldErrors.category}
+          </p>
         )}
       </div>
     </>
@@ -688,7 +792,9 @@ function FixedSubmitButton({
           )}
         </Button>
         <p className="text-xs text-muted-foreground hidden sm:block shrink-0">
-          AI 将自动分析 SKILL.md<br />并生成个性化可视化界面
+          AI 将自动分析 SKILL.md
+          <br />
+          并生成个性化可视化界面
         </p>
       </div>
     </div>

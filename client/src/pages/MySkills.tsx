@@ -18,7 +18,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Plus, Pencil, Trash2, Eye, Github, RefreshCw, MessageSquare, ChevronRight, Clock, User, Bot, X, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  Github,
+  RefreshCw,
+  MessageSquare,
+  ChevronRight,
+  Clock,
+  User,
+  Bot,
+  X,
+  Loader2,
+} from "lucide-react";
 import { Link, useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -71,18 +85,24 @@ function ConversationDetailSheet({
   const displayMessages = isStaleResponse ? [] : (messages ?? []);
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col h-full overflow-hidden">
+    <Sheet open={open} onOpenChange={v => !v && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-xl p-0 flex flex-col h-full overflow-hidden"
+      >
         {/* Header */}
         <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
-          <SheetTitle className="text-base font-semibold text-foreground leading-snug truncate mb-2">
+          <SheetTitle className="text-base font-semibold text-foreground leading-snug truncate min-w-0 mb-2">
             {conversation?.title ?? "对话详情"}
           </SheetTitle>
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
             {conversation?.skillTitle && (
-              <span className="flex items-center gap-1">
-                <Bot className="w-3 h-3" />
-                {conversation.skillTitle}
+              <span
+                className="flex items-center gap-1 truncate min-w-0"
+                title={conversation.skillTitle}
+              >
+                <Bot className="w-3 h-3 shrink-0" />
+                <span className="truncate">{conversation.skillTitle}</span>
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -102,7 +122,12 @@ function ConversationDetailSheet({
             )}
           </div>
           {conversation?.skillSlug && (
-            <Button variant="outline" size="sm" asChild className="mt-3 h-8 text-xs gap-1 w-fit">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="mt-3 h-8 text-xs gap-1 w-fit"
+            >
               <Link href={`/skill/${conversation.skillSlug}`} onClick={onClose}>
                 <ChevronRight className="w-3.5 h-3.5" />
                 继续对话
@@ -113,30 +138,40 @@ function ConversationDetailSheet({
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="px-5 py-4">
-          {isLoading || isStaleResponse ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`flex gap-3 ${i % 2 === 0 ? "flex-row-reverse" : ""}`}>
-                  <Skeleton className="w-7 h-7 rounded-full shrink-0" />
-                  <Skeleton className={`h-16 rounded-xl ${i % 2 === 0 ? "w-2/3" : "w-3/4"}`} />
-                </div>
-              ))}
-            </div>
-          ) : displayMessages && displayMessages.length > 0 ? (
-            <div className="space-y-4 pb-4">
-              {displayMessages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-center">
-              <MessageSquare className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">暂无消息记录</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">在左侧输入框发送消息开始对话</p>
-            </div>
-          )}
-        </div>
+          <div className="px-5 py-4">
+            {isLoading || isStaleResponse ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map(i => (
+                  <div
+                    key={i}
+                    className={`flex gap-3 ${i % 2 === 0 ? "flex-row-reverse" : ""}`}
+                  >
+                    <Skeleton className="w-7 h-7 rounded-full shrink-0" />
+                    <Skeleton
+                      className={`h-16 rounded-xl ${i % 2 === 0 ? "w-2/3" : "w-3/4"}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : displayMessages && displayMessages.length > 0 ? (
+              <div className="space-y-4 pb-4">
+                {displayMessages.map(msg => (
+                  <MessageBubble key={msg.id} message={msg} />
+                ))}
+              </div>
+            ) : (
+              <div
+                role="status"
+                className="flex flex-col items-center justify-center h-40 text-center"
+              >
+                <MessageSquare className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">暂无消息记录</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  在左侧输入框发送消息开始对话
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -145,7 +180,11 @@ function ConversationDetailSheet({
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 
-function MessageBubble({ message }: { message: { id: number; role: string; content: string; createdAt: Date } }) {
+function MessageBubble({
+  message,
+}: {
+  message: { id: number; role: string; content: string; createdAt: Date };
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -153,16 +192,24 @@ function MessageBubble({ message }: { message: { id: number; role: string; conte
       {/* Avatar */}
       <div
         className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-          isUser ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          isUser
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
         }`}
       >
-        {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+        {isUser ? (
+          <User className="w-3.5 h-3.5" />
+        ) : (
+          <Bot className="w-3.5 h-3.5" />
+        )}
       </div>
 
       {/* Bubble */}
-      <div className={`flex flex-col gap-1 max-w-[82%] ${isUser ? "items-end" : "items-start"}`}>
+      <div
+        className={`flex flex-col gap-1 max-w-[82%] ${isUser ? "items-end" : "items-start"}`}
+      >
         <div
-          className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+          className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words overflow-hidden max-w-full ${
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-muted/60 text-foreground rounded-tl-sm border border-border/50"
@@ -171,7 +218,7 @@ function MessageBubble({ message }: { message: { id: number; role: string; conte
           {isUser ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           ) : (
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-pre:my-2 prose-ul:my-1 prose-li:my-0.5">
+            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-pre:my-2 prose-ul:my-1 prose-li:my-0.5 overflow-hidden">
               <Streamdown>{message.content}</Streamdown>
             </div>
           )}
@@ -197,16 +244,16 @@ export default function MySkills() {
   // Conversation detail sheet state
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Track deletion to prevent drawer from reopening during delete
+  const isDeletingRef = useRef(false);
 
   const { data, isLoading } = trpc.skills.list.useQuery(
     { authorId: user?.id, limit: 50, orderBy: "latest" },
     { enabled: !!user?.id }
   );
 
-  const { data: conversations, isLoading: loadingConversations } = trpc.conversations.list.useQuery(
-    undefined,
-    { enabled: isAuthenticated }
-  );
+  const { data: conversations, isLoading: loadingConversations } =
+    trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
 
   const deleteMutation = trpc.skills.delete.useMutation({
     onSuccess: () => {
@@ -214,28 +261,53 @@ export default function MySkills() {
       utils.skills.list.invalidate();
       utils.conversations.list.invalidate();
     },
-    onError: (e) => toast.error(e.message ?? "删除失败"),
+    onError: e => toast.error(e.message ?? "删除失败"),
   });
 
   const deleteConvMutation = trpc.conversations.delete.useMutation({
     onSuccess: () => {
       toast.success("对话已删除");
       utils.conversations.list.invalidate();
+      utils.conversations.messages.invalidate();
+      isDeletingRef.current = false;
     },
-    onError: (e) => toast.error(e.message ?? "删除失败"),
+    onError: e => {
+      toast.error(e.message ?? "删除失败");
+      isDeletingRef.current = false;
+    },
   });
+
+  // Close drawer when a conversation is deleted (using ref to track success state change)
+  const prevDeleteSuccessRef = useRef(false);
+  useEffect(() => {
+    if (
+      deleteConvMutation.isSuccess &&
+      !prevDeleteSuccessRef.current &&
+      sheetOpen
+    ) {
+      setSheetOpen(false);
+      setSelectedConv(null);
+    }
+    prevDeleteSuccessRef.current = deleteConvMutation.isSuccess;
+  }, [deleteConvMutation.isSuccess, sheetOpen]);
 
   const regenerateMutation = trpc.skills.regenerateUiConfig.useMutation({
     onSuccess: () => {
       toast.success("界面配置已重新生成");
       utils.skills.list.invalidate();
     },
-    onError: (e) => toast.error(e.message ?? "生成失败"),
+    onError: e => toast.error(e.message ?? "生成失败"),
   });
 
   const handleOpenConv = (conv: Conversation) => {
-    setSelectedConv(conv);
-    setSheetOpen(true);
+    // Don't open drawer if we're in the process of deleting this conversation
+    if (isDeletingRef.current) return;
+    setSelectedConv(null);
+    // Use setTimeout to ensure state is properly reset before opening
+    setTimeout(() => {
+      setSelectedConv(conv);
+      setSheetOpen(true);
+    }, 0);
   };
 
   if (!isAuthenticated) {
@@ -301,7 +373,7 @@ export default function MySkills() {
               </div>
             ) : skills.length > 0 ? (
               <div className="space-y-3">
-                {skills.map((skill) => (
+                {skills.map(skill => (
                   <div
                     key={skill.id}
                     className="bg-white rounded-xl border border-border p-4 flex items-center gap-4"
@@ -311,7 +383,7 @@ export default function MySkills() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-semibold text-sm text-foreground truncate">
+                        <h3 className="font-semibold text-sm text-foreground truncate min-w-0">
                           {skill.title}
                         </h3>
                         <span
@@ -339,11 +411,20 @@ export default function MySkills() {
                             GitHub
                           </a>
                         )}
-                        <span>{new Date(skill.createdAt).toLocaleDateString("zh-CN")}</span>
+                        <span>
+                          {new Date(skill.createdAt).toLocaleDateString(
+                            "zh-CN"
+                          )}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <Button variant="ghost" size="sm" asChild className="h-8 px-2 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="h-8 px-2 text-xs"
+                      >
                         <Link href={`/skill/${skill.slug}`}>
                           <Eye className="w-3.5 h-3.5" />
                         </Link>
@@ -351,7 +432,9 @@ export default function MySkills() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => regenerateMutation.mutate({ id: skill.id })}
+                        onClick={() =>
+                          regenerateMutation.mutate({ id: skill.id })
+                        }
                         disabled={regenerateMutation.isPending}
                         className="h-8 px-2 text-xs"
                         title="重新生成 UI 配置"
@@ -360,7 +443,12 @@ export default function MySkills() {
                           className={`w-3.5 h-3.5 ${regenerateMutation.isPending ? "animate-spin" : ""}`}
                         />
                       </Button>
-                      <Button variant="ghost" size="sm" asChild className="h-8 px-2 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="h-8 px-2 text-xs"
+                      >
                         <Link href={`/edit/${skill.id}`}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Link>
@@ -379,13 +467,16 @@ export default function MySkills() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                              确定要删除技能「{skill.title}」吗？此操作不可撤销。
+                              确定要删除技能「{skill.title}
+                              」吗？此操作不可撤销。
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>取消</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteMutation.mutate({ id: skill.id })}
+                              onClick={() =>
+                                deleteMutation.mutate({ id: skill.id })
+                              }
                               disabled={deleteMutation.isPending}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
@@ -406,9 +497,14 @@ export default function MySkills() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border">
+              <div
+                role="status"
+                className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border"
+              >
                 <div className="text-5xl mb-4">✨</div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">还没有创建技能</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  还没有创建技能
+                </h3>
                 <p className="text-muted-foreground text-sm mb-6">
                   创建你的第一个 Skill，分享给社区
                 </p>
@@ -430,7 +526,7 @@ export default function MySkills() {
               </div>
             ) : (conversations?.length ?? 0) > 0 ? (
               <div className="space-y-2">
-                {conversations!.map((conv) => (
+                {conversations!.map(conv => (
                   <div
                     key={conv.id}
                     className="bg-white rounded-xl border border-border p-4 flex items-center gap-4 group hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer"
@@ -444,11 +540,14 @@ export default function MySkills() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-sm font-medium text-foreground truncate">
+                        <p className="text-sm font-medium text-foreground truncate min-w-0">
                           {conv.title ?? "对话"}
                         </p>
                         {conv.skillTitle && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 max-w-[100px] truncate"
+                            title={conv.skillTitle}
+                          >
                             {conv.skillTitle}
                           </span>
                         )}
@@ -474,13 +573,19 @@ export default function MySkills() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       {/* View detail hint — clickable, stops propagation so delete dialog isn't triggered */}
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleOpenConv(conv as Conversation); }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleOpenConv(conv as Conversation);
+                        }}
                         className="text-[11px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors hidden sm:block cursor-pointer"
                       >
                         点击查看详情
                       </button>
                       <ChevronRight
-                        onClick={(e) => { e.stopPropagation(); handleOpenConv(conv as Conversation); }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleOpenConv(conv as Conversation);
+                        }}
                         className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/60 transition-colors cursor-pointer shrink-0"
                       />
 
@@ -489,7 +594,7 @@ export default function MySkills() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                             className="h-8 px-2 text-xs text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -505,9 +610,12 @@ export default function MySkills() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>取消</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() =>
-                                deleteConvMutation.mutate({ conversationId: conv.id })
-                              }
+                              onClick={() => {
+                                isDeletingRef.current = true;
+                                deleteConvMutation.mutate({
+                                  conversationId: conv.id,
+                                });
+                              }}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               删除
@@ -520,9 +628,14 @@ export default function MySkills() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border">
+              <div
+                role="status"
+                className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border"
+              >
                 <div className="text-5xl mb-4">💬</div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">还没有对话记录</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  还没有对话记录
+                </h3>
                 <p className="text-muted-foreground text-sm">
                   使用技能对话后，历史记录会保存在这里
                 </p>
@@ -536,7 +649,10 @@ export default function MySkills() {
       <ConversationDetailSheet
         conversation={selectedConv}
         open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => {
+          setSheetOpen(false);
+          setSelectedConv(null);
+        }}
       />
     </div>
   );

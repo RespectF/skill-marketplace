@@ -3,12 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import Navbar from "@/components/Navbar";
 import { SkillCard } from "@/components/SkillCard";
 
-const CATEGORIES = ["全部", "创意设计", "开发技术", "企业通信", "文档处理", "工具"];
+const CATEGORIES = [
+  "全部",
+  "创意设计",
+  "开发技术",
+  "企业通信",
+  "文档处理",
+  "工具",
+];
 const ORDER_OPTIONS = [
   { value: "latest", label: "最新发布" },
   { value: "popular", label: "最受欢迎" },
@@ -24,21 +31,42 @@ export default function Explore() {
   const [orderBy, setOrderBy] = useState<"latest" | "popular">(
     (params.get("order") as "latest" | "popular") ?? "latest"
   );
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(Number(params.get("page") ?? "0"));
   const LIMIT = 12;
 
+  // Request ID to handle out-of-order responses
+  const latestRequestIdRef = useRef(0);
+
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [query, category, orderBy]);
+  useEffect(() => {
+    setPage(0);
+  }, [query, category, orderBy]);
 
-  const { data, isLoading, isFetching } = trpc.skills.list.useQuery({
-    search: query || undefined,
-    category: category || undefined,
-    orderBy,
-    limit: LIMIT,
-    offset: page * LIMIT,
-    isEditorsPick: params.get("editors") === "1" ? true : undefined,
-  });
+  // Sync page from URL when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const pageParam = params.get("page");
+    const urlPage = pageParam ? Number(pageParam) : 0;
+    setPage(urlPage);
+  }, [search]);
 
+  const { data, isLoading, isFetching } = trpc.skills.list.useQuery(
+    {
+      search: query || undefined,
+      category: category || undefined,
+      orderBy,
+      limit: LIMIT,
+      offset: page * LIMIT,
+      isEditorsPick: params.get("editors") === "1" ? true : undefined,
+    },
+    {
+      onSettled: () => {
+        // Increment request ID after query settles to track latest
+        latestRequestIdRef.current++;
+      },
+    }
+  );
+
+  // Only use data from the latest request
   const skills = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / LIMIT);
@@ -52,6 +80,7 @@ export default function Explore() {
     setCategory("");
     setOrderBy("latest");
     setPage(0);
+    setLocation("/explore", { replace: true });
   };
 
   const hasFilters = query || category || orderBy !== "latest";
@@ -62,10 +91,13 @@ export default function Explore() {
     if (query) newParams.set("q", query);
     if (category) newParams.set("category", category);
     if (orderBy !== "latest") newParams.set("order", orderBy);
+    if (page > 0) newParams.set("page", String(page));
     if (params.get("editors") === "1") newParams.set("editors", "1");
     const newSearch = newParams.toString();
-    setLocation(newSearch ? `/explore?${newSearch}` : "/explore", { replace: true });
-  }, [query, category, orderBy, params, setLocation]);
+    setLocation(newSearch ? `/explore?${newSearch}` : "/explore", {
+      replace: true,
+    });
+  }, [query, category, orderBy, page, params, setLocation]);
 
   useEffect(() => {
     syncToUrl();
@@ -91,7 +123,7 @@ export default function Explore() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={e => setQuery(e.target.value)}
               placeholder="搜索技能名称或描述..."
               className="pl-9 text-sm"
             />
@@ -103,7 +135,7 @@ export default function Explore() {
               <SlidersHorizontal className="w-3.5 h-3.5" />
               分类
             </span>
-            {CATEGORIES.map((cat) => (
+            {CATEGORIES.map(cat => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat === "全部" ? "" : cat)}
@@ -120,8 +152,10 @@ export default function Explore() {
 
           {/* Order */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground font-medium">排序</span>
-            {ORDER_OPTIONS.map((opt) => (
+            <span className="text-xs text-muted-foreground font-medium">
+              排序
+            </span>
+            {ORDER_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => setOrderBy(opt.value as "latest" | "popular")}
@@ -148,7 +182,7 @@ export default function Explore() {
         </div>
 
         {/* Results */}
-        {(isLoading || (isFetching && skills.length === 0)) ? (
+        {isLoading || (isFetching && skills.length === 0) ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-36 sm:h-48 rounded-xl" />
@@ -157,7 +191,7 @@ export default function Explore() {
         ) : skills.length > 0 ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {skills.map((skill) => (
+              {skills.map(skill => (
                 <SkillCard key={skill.id} skill={skill} />
               ))}
             </div>
@@ -168,7 +202,7 @@ export default function Explore() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
                 >
                   上一页
@@ -179,7 +213,7 @@ export default function Explore() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                 >
                   下一页
@@ -188,9 +222,14 @@ export default function Explore() {
             )}
           </>
         ) : (
-          <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border">
+          <div
+            role="status"
+            className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border"
+          >
             <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">未找到相关技能</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              未找到相关技能
+            </h3>
             <p className="text-muted-foreground text-sm mb-4">
               {query ? `没有找到包含"${query}"的技能` : "当前分类暂无技能"}
             </p>
