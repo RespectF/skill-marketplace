@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Zap, LogOut, BookOpen, Settings } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -53,12 +57,15 @@ export default function Navbar({ onSearch }: NavbarProps) {
           </nav>
 
           {/* Search — desktop inline form */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-auto hidden sm:block">
+          <form
+            onSubmit={handleSearch}
+            className="flex-1 max-w-md mx-auto hidden sm:block"
+          >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={e => setSearchValue(e.target.value)}
                 placeholder="搜索技能..."
                 className="pl-9 h-9 bg-muted/50 border-transparent focus:border-border focus:bg-white text-sm"
               />
@@ -99,24 +106,31 @@ export default function Navbar({ onSearch }: NavbarProps) {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 transition-colors">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={(user as any)?.avatarUrl ?? undefined} alt={user?.name ?? "U"} />
+                        <AvatarImage
+                          src={(user as any)?.avatarUrl ?? undefined}
+                          alt={user?.name ?? "U"}
+                        />
                         <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                           {user?.name?.[0]?.toUpperCase() ?? "U"}
                         </AvatarFallback>
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-48 min-w-0">
                     <div className="px-3 py-2 min-w-0">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="text-sm font-medium truncate">{user?.name ?? "用户"}</p>
+                          <p className="text-sm font-medium truncate">
+                            {user?.name ?? "用户"}
+                          </p>
                         </TooltipTrigger>
                         <TooltipContent>{user?.name ?? "用户"}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {user?.email}
+                          </p>
                         </TooltipTrigger>
                         <TooltipContent>{user?.email}</TooltipContent>
                       </Tooltip>
@@ -131,7 +145,10 @@ export default function Navbar({ onSearch }: NavbarProps) {
                       用户中心
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout} className="text-destructive">
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="text-destructive"
+                    >
                       <LogOut className="w-4 h-4 mr-2" />
                       退出登录
                     </DropdownMenuItem>
@@ -158,7 +175,8 @@ function NavLink({
   children: React.ReactNode;
 }) {
   const [location] = useLocation();
-  const isActive = location === href || (href !== "/" && location.startsWith(href));
+  const isActive =
+    location === href || (href !== "/" && location.startsWith(href));
 
   return (
     <Link

@@ -2,7 +2,7 @@ import { Eye, Heart, Bookmark } from "lucide-react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export interface SkillCardData {
@@ -92,7 +92,16 @@ const THEME_ICON_BG: Record<string, string> = {
 
 // ─── Like/Favorite Button ─────────────────────────────────────────────────────
 
-function LikeFavoriteButtons({ skill }: { skill: SkillCardData }) {
+interface LikeFavoriteButtonsProps {
+  skill: SkillCardData;
+  /** Exposes true when either like or favorite mutation is in flight */
+  onPendingChange?: (pending: boolean) => void;
+}
+
+function LikeFavoriteButtons({
+  skill,
+  onPendingChange,
+}: LikeFavoriteButtonsProps) {
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
@@ -102,61 +111,89 @@ function LikeFavoriteButtons({ skill }: { skill: SkillCardData }) {
     { enabled: isAuthenticated }
   );
 
-  const liked = interactions?.likes.includes(skill.id) ?? false;
-  const favorited = interactions?.favorites.includes(skill.id) ?? false;
+  // Local optimistic state - updated immediately on click for instant feedback
+  const [optimisticLiked, setOptimisticLiked] = useState(false);
+  const [optimisticFavorited, setOptimisticFavorited] = useState(false);
 
-  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null);
-  const [optimisticFavorited, setOptimisticFavorited] = useState<boolean | null>(null);
+  // Sync optimistic state when interactions query returns
+  useEffect(() => {
+    if (interactions) {
+      setOptimisticLiked(interactions.likes.includes(skill.id));
+      setOptimisticFavorited(interactions.favorites.includes(skill.id));
+    }
+  }, [interactions, skill.id]);
 
-  const isLiked = optimisticLiked !== null ? optimisticLiked : liked;
-  const isFavorited = optimisticFavorited !== null ? optimisticFavorited : favorited;
-
+  // Mutations without callbacks - handle optimistic update in mutate call
   const likeMutation = trpc.interactions.toggleLike.useMutation({
-    onMutate: () => {
-      // Capture current state before mutation
-      setOptimisticLiked(!liked);
-    },
-    onSuccess: () => {
-      setOptimisticLiked(null);
+    onSuccess: res => {
+      // Sync with server truth
+      setOptimisticLiked(res.liked);
       utils.interactions.getInteractions.invalidate();
       utils.skills.list.invalidate();
-      toast.success(!liked ? "已点赞" : "已取消点赞");
+      toast.success(res.liked ? "已点赞" : "已取消点赞");
+      onPendingChange?.(false);
     },
     onError: () => {
-      setOptimisticLiked(null);
+      // Rollback optimistic update
+      setOptimisticLiked(interactions?.likes.includes(skill.id) ?? false);
+      utils.interactions.getInteractions.invalidate();
       toast.error("操作失败，请重试");
+      onPendingChange?.(false);
     },
   });
 
   const favMutation = trpc.interactions.toggleFavorite.useMutation({
-    onMutate: () => {
-      // Capture current state before mutation
-      setOptimisticFavorited(!favorited);
-    },
-    onSuccess: () => {
-      setOptimisticFavorited(null);
+    onSuccess: res => {
+      setOptimisticFavorited(res.favorited);
       utils.interactions.getInteractions.invalidate();
       utils.interactions.getFavorites.invalidate();
       utils.skills.list.invalidate();
-      toast.success(!favorited ? "已收藏" : "已取消收藏");
+      toast.success(res.favorited ? "已收藏" : "已取消收藏");
+      onPendingChange?.(false);
     },
     onError: () => {
-      setOptimisticFavorited(null);
+      setOptimisticFavorited(
+        interactions?.favorites.includes(skill.id) ?? false
+      );
+      utils.interactions.getInteractions.invalidate();
       toast.error("操作失败，请重试");
+      onPendingChange?.(false);
     },
   });
+
+  // Report pending state to parent so card navigation can be blocked
+  useEffect(() => {
+    if (likeMutation.isPending || favMutation.isPending) {
+      onPendingChange?.(true);
+    }
+  }, [likeMutation.isPending, favMutation.isPending, onPendingChange]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) { toast.error("请先登录"); return; }
+    if (!isAuthenticated) {
+      toast.error("请先登录");
+      return;
+    }
+    if (likeMutation.isPending) return;
+
+    // Optimistic update - immediately reflect expected change
+    const newLiked = !optimisticLiked;
+    setOptimisticLiked(newLiked);
     likeMutation.mutate({ skillId: skill.id });
   };
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isAuthenticated) { toast.error("请先登录"); return; }
+    if (!isAuthenticated) {
+      toast.error("请先登录");
+      return;
+    }
+    if (favMutation.isPending) return;
+
+    const newFavorited = !optimisticFavorited;
+    setOptimisticFavorited(newFavorited);
     favMutation.mutate({ skillId: skill.id });
   };
 
@@ -164,87 +201,111 @@ function LikeFavoriteButtons({ skill }: { skill: SkillCardData }) {
     <div className="flex items-center gap-1">
       <button
         onClick={handleLike}
-        className={`flex items-center gap-0.5 text-[11px] px-2 py-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-90 sm:px-1.5 sm:py-0.5 ${
-          isLiked
+        disabled={likeMutation.isPending}
+        className={`flex items-center justify-center gap-0.5 text-[11px] px-2 py-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95 hover:shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] sm:px-1.5 sm:py-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
+          optimisticLiked
             ? "text-red-500 bg-red-50"
             : "text-muted-foreground hover:text-red-400 hover:bg-red-50"
         }`}
-        title={isLiked ? "取消点赞" : "点赞"}
+        title={optimisticLiked ? "取消点赞" : "点赞"}
       >
-        <Heart className={`w-3 h-3 ${isLiked ? "fill-current" : ""}`} />
-        <span className="hidden sm:inline">{(skill.likeCount ?? 0) + (optimisticLiked === true ? 1 : optimisticLiked === false ? -1 : 0)}</span>
+        <Heart
+          className={`w-4 h-4 shrink-0 ${optimisticLiked ? "fill-current" : ""}`}
+        />
+        <span className="hidden sm:inline">{skill.likeCount ?? 0}</span>
       </button>
       <button
         onClick={handleFavorite}
-        className={`flex items-center gap-0.5 text-[11px] px-2 py-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-90 sm:px-1.5 sm:py-0.5 ${
-          isFavorited
+        disabled={favMutation.isPending}
+        className={`flex items-center justify-center gap-0.5 text-[11px] px-2 py-1.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95 hover:shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] sm:px-1.5 sm:py-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
+          optimisticFavorited
             ? "text-amber-500 bg-amber-50"
             : "text-muted-foreground hover:text-amber-400 hover:bg-amber-50"
         }`}
-        title={isFavorited ? "取消收藏" : "收藏"}
+        title={optimisticFavorited ? "取消收藏" : "收藏"}
       >
-        <Bookmark className={`w-3 h-3 ${isFavorited ? "fill-current" : ""}`} />
+        <Bookmark
+          className={`w-4 h-4 shrink-0 ${optimisticFavorited ? "fill-current" : ""}`}
+        />
       </button>
     </div>
   );
 }
 
-// ─── Standard Card ────────────────────────────────────────────────────────────
+// ─── Standard Card ───────────────────────────────────────────────────────────-
 
 /** 标准卡片（用于编辑精选、搜索结果等网格展示） */
 export function SkillCard({ skill }: { skill: SkillCardData }) {
+  const [disabled, setDisabled] = useState(false);
   const icon = getSkillIcon(skill);
   const theme = getSkillTheme(skill);
   const iconBg = THEME_ICON_BG[theme] ?? THEME_ICON_BG.blue;
 
   const handleClick = () => {
+    if (disabled) return;
     // Save last visited skill id for scroll restoration
     sessionStorage.setItem("lastVisitedSkillId", String(skill.id));
   };
 
   return (
-    <Link href={`/skill/${skill.slug}`} onClick={handleClick}>
-      <div
-        id={`skill-card-${skill.id}`}
-        className="skill-card bg-white rounded-xl border border-border p-4 cursor-pointer h-full flex flex-col"
+    <div onClick={disabled ? undefined : handleClick} aria-disabled={disabled}>
+      <Link
+        href={disabled ? undefined : `/skill/${skill.slug}`}
+        onClick={disabled ? e => e.preventDefault() : handleClick}
+        aria-disabled={disabled}
+        tabIndex={disabled ? -1 : 0}
       >
-        {/* Icon */}
-        <div className={`w-12 h-12 rounded-xl ${iconBg} flex items-center justify-center text-2xl mb-3 shrink-0`}>
-          {icon}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-h-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-sm text-foreground line-clamp-1">{skill.title}</h3>
-            {skill.isOfficial && (
-              <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
-                官方
-              </span>
-            )}
+        <div
+          id={`skill-card-${skill.id}`}
+          className={`skill-card bg-white rounded-xl border border-border p-4 cursor-pointer h-full flex flex-col${disabled ? " opacity-60 pointer-events-none" : ""}`}
+        >
+          {/* Icon */}
+          <div
+            className={`w-12 h-12 rounded-xl ${iconBg} flex items-center justify-center text-2xl mb-3 shrink-0`}
+          >
+            {icon}
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {skill.description}
-          </p>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60">
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full cat-badge-${skill.category}`}>
-            {skill.category}
-          </span>
-          <div className="flex items-center gap-2">
-            <LikeFavoriteButtons skill={skill} />
-            {(skill.viewCount ?? 0) > 0 && (
-              <span className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
-                <Eye className="w-3 h-3" />
-                {skill.viewCount}
-              </span>
-            )}
+          {/* Content */}
+          <div className="flex-1 min-h-0 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-1 min-w-0">
+              <h3 className="font-semibold text-sm text-foreground line-clamp-1 min-w-0">
+                {skill.title}
+              </h3>
+              {skill.isOfficial && (
+                <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
+                  官方
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+              {skill.description}
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/60">
+            <span
+              className={`text-[11px] font-medium px-2 py-0.5 rounded-full cat-badge-${skill.category}`}
+            >
+              {skill.category}
+            </span>
+            <div className="flex items-center gap-2">
+              <LikeFavoriteButtons
+                skill={skill}
+                onPendingChange={setDisabled}
+              />
+              {(skill.viewCount ?? 0) > 0 && (
+                <span className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                  <Eye className="w-3 h-3" />
+                  {skill.viewCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
@@ -260,7 +321,9 @@ export function FeaturedSkillCard({ skill }: { skill: SkillCardData }) {
 
   return (
     <Link href={`/skill/${skill.slug}`} onClick={handleClick}>
-      <div className={`skill-card bg-gradient-to-br ${gradient} rounded-2xl border border-border p-6 cursor-pointer h-full flex items-center justify-between gap-4 min-h-[160px]`}>
+      <div
+        className={`skill-card bg-gradient-to-br ${gradient} rounded-2xl border border-border p-6 cursor-pointer h-full flex items-center justify-between gap-4 min-h-[160px]`}
+      >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
@@ -272,12 +335,22 @@ export function FeaturedSkillCard({ skill }: { skill: SkillCardData }) {
               </span>
             )}
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2 line-clamp-1">{skill.title}</h2>
+          <h2
+            className="text-xl font-bold text-foreground mb-2 line-clamp-1 min-w-0"
+            title={skill.title}
+          >
+            {skill.title}
+          </h2>
           <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
             {skill.description}
           </p>
           {skill.authorName && (
-            <p className="text-xs text-muted-foreground mt-3">@{skill.authorName}</p>
+            <p
+              className="text-xs text-muted-foreground mt-3 truncate min-w-0"
+              title={skill.authorName}
+            >
+              @{skill.authorName}
+            </p>
           )}
         </div>
         <div className="shrink-0 w-20 h-20 rounded-2xl bg-white/60 flex items-center justify-center text-4xl shadow-sm">
@@ -301,15 +374,21 @@ export function HorizontalSkillCard({ skill }: { skill: SkillCardData }) {
   return (
     <Link href={`/skill/${skill.slug}`} onClick={handleClick}>
       <div className="skill-card bg-white rounded-xl border border-border p-4 cursor-pointer w-52 shrink-0">
-        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center text-xl mb-3`}>
+        <div
+          className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center text-xl mb-3`}
+        >
           {icon}
         </div>
-        <h3 className="font-semibold text-sm text-foreground line-clamp-1 mb-1">{skill.title}</h3>
+        <h3 className="font-semibold text-sm text-foreground line-clamp-1 mb-1 min-w-0">
+          {skill.title}
+        </h3>
         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-2">
           {skill.description}
         </p>
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full cat-badge-${skill.category}`}>
+          <span
+            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full cat-badge-${skill.category}`}
+          >
             {skill.category}
           </span>
           <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
