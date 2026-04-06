@@ -1,4 +1,8 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
+import {
+  AXIOS_TIMEOUT_MS,
+  COOKIE_NAME,
+  ONE_YEAR_MS,
+} from "../../shared/const.js";
 import { ForbiddenError } from "../../shared/_core/errors.js";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -256,49 +260,80 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
+    console.error("DEBUG: authenticateRequest called");
     // Regular authentication flow
-    const cookieString = req.headers.get("cookie") || ""; 
-    const cookies = this.parseCookies(cookieString);
-    
-    const sessionCookie = cookies.get(COOKIE_NAME);
-    const session = await this.verifySession(sessionCookie);
+    try {
+      // Handle both standard Request headers and node-http IncomingMessage headers
+      const rawCookie = req.headers.get
+        ? req.headers.get("cookie")
+        : (req.headers as Record<string, string | string[] | undefined>)
+            ?.cookie;
+      const cookieString = Array.isArray(rawCookie)
+        ? rawCookie.join("; ")
+        : rawCookie || "";
+      console.error(
+        "DEBUG: cookieString:",
+        cookieString.substring(0, 50) + "..."
+      );
+      const cookies = this.parseCookies(cookieString);
+      console.error("DEBUG: cookies parsed, size:", cookies.size);
 
-    if (!session) {
-      throw ForbiddenError("Invalid session cookie");
-    }
+      const sessionCookie = cookies.get(COOKIE_NAME);
+      console.error(
+        "DEBUG: sessionCookie:",
+        sessionCookie ? "present" : "missing"
+      );
 
-    const sessionUserId = session.openId;
-    const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+      const session = await this.verifySession(sessionCookie);
+      console.error("DEBUG: session:", session);
 
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
+      if (!session) {
+        throw ForbiddenError("Invalid session cookie");
       }
+
+      const sessionUserId = session.openId;
+      const signedInAt = new Date();
+      let user = await db.getUserByOpenId(sessionUserId);
+      console.error(
+        "DEBUG: user from DB:",
+        user ? `found (${user.openId})` : "not found"
+      );
+
+      // If user not in DB, create from session payload (for local dev OAuth)
+      if (!user) {
+        try {
+          await db.upsertUser({
+            openId: session.openId,
+            name: session.name || null,
+            email: null,
+            loginMethod: "github",
+            lastSignedIn: signedInAt,
+          });
+          user = await db.getUserByOpenId(session.openId);
+          console.error(
+            "DEBUG: user after upsert:",
+            user ? `found (${user.openId})` : "still not found"
+          );
+        } catch (error) {
+          console.error("[Auth] Failed to create user:", error);
+          throw ForbiddenError("Failed to create user");
+        }
+      }
+
+      if (!user) {
+        throw ForbiddenError("User not found");
+      }
+
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: signedInAt,
+      });
+
+      return user;
+    } catch (error) {
+      console.error("DEBUG: authenticateRequest error:", error);
+      throw error;
     }
-
-    if (!user) {
-      throw ForbiddenError("User not found");
-    }
-
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
-
-    return user;
   }
 }
 

@@ -4,6 +4,7 @@ import {
   addConversationMessage,
   createConversation,
   deleteConversation,
+  getConversationsBySkill,
   getConversationMessages,
   getUserConversations,
   updateConversation,
@@ -17,6 +18,15 @@ export const conversationsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     return getUserConversations(ctx.user.id);
   }),
+
+  /**
+   * 获取当前用户对某个 Skill 的所有对话
+   */
+  listBySkill: protectedProcedure
+    .input(z.object({ skillId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      return getConversationsBySkill(ctx.user.id, input.skillId);
+    }),
 
   /**
    * 获取单个对话的消息列表
@@ -41,7 +51,9 @@ export const conversationsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const title = input.firstMessage.slice(0, 50) + (input.firstMessage.length > 50 ? "..." : "");
+      const title =
+        input.firstMessage.slice(0, 50) +
+        (input.firstMessage.length > 50 ? "..." : "");
       const result = await createConversation({
         userId: ctx.user.id,
         skillId: input.skillId,

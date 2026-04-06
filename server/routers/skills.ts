@@ -55,29 +55,49 @@ async function fetchSkillMdFromGitHub(repoUrl: string): Promise<string> {
   const cleanRepo = repo.replace(/\.git$/, "");
 
   // Helper: fetch raw content via raw.githubusercontent.com (most reliable)
-  async function fetchRaw(filePath: string, ref: string): Promise<string | null> {
+  async function fetchRaw(
+    filePath: string,
+    ref: string
+  ): Promise<string | null> {
     const cleanPath = filePath.replace(/^\//, "");
     const url = `https://raw.githubusercontent.com/${owner}/${cleanRepo}/${ref}/${cleanPath}`;
     try {
-      const res = await axios.get(url, { timeout: 10000, responseType: "text" });
-      if (res.status === 200 && typeof res.data === "string" && res.data.length > 10) {
+      const res = await axios.get(url, {
+        timeout: 10000,
+        responseType: "text",
+      });
+      if (
+        res.status === 200 &&
+        typeof res.data === "string" &&
+        res.data.length > 10
+      ) {
         return res.data;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 
   // Helper: fetch via GitHub API (fallback, handles base64 content)
-  async function fetchApi(filePath: string, ref: string): Promise<string | null> {
+  async function fetchApi(
+    filePath: string,
+    ref: string
+  ): Promise<string | null> {
     const cleanPath = filePath.replace(/^\//, "");
     const url = `https://api.github.com/repos/${owner}/${cleanRepo}/contents/${cleanPath}?ref=${ref}`;
     try {
       const res = await axios.get(url, { timeout: 10000 });
       if (res.data?.content && res.data?.encoding === "base64") {
-        return Buffer.from(res.data.content.replace(/\n/g, ""), "base64").toString("utf-8");
+        return Buffer.from(
+          res.data.content.replace(/\n/g, ""),
+          "base64"
+        ).toString("utf-8");
       }
       if (typeof res.data === "string" && res.data.length > 10) return res.data;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 
@@ -127,12 +147,14 @@ async function fetchSkillMdFromGitHub(repoUrl: string): Promise<string> {
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Deduplicate while preserving order
   const seen = new Set<string>();
-  const uniqueCandidates = candidates.filter((c) => {
+  const uniqueCandidates = candidates.filter(c => {
     if (seen.has(c)) return false;
     seen.add(c);
     return true;
@@ -257,15 +279,21 @@ ${skill.skillMd.slice(0, 3000)}
     });
     const content = res.choices?.[0]?.message?.content;
     // Strip markdown code block formatting if present
-    const jsonStr = typeof content === "string"
-      ? content.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim()
-      : null;
+    const jsonStr =
+      typeof content === "string"
+        ? content
+            .replace(/^```json\s*/i, "")
+            .replace(/\s*```$/i, "")
+            .trim()
+        : null;
     // Validate it's proper JSON before returning
     if (jsonStr) {
       try {
         JSON.parse(jsonStr);
         return jsonStr;
-      } catch { /* fall through to fallback */ }
+      } catch {
+        /* fall through to fallback */
+      }
     }
     return JSON.stringify({
       theme: "blue",
@@ -326,7 +354,8 @@ export const skillsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const skill = await getSkillById(input.id);
-      if (!skill) throw new TRPCError({ code: "NOT_FOUND", message: "Skill 不存在" });
+      if (!skill)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Skill 不存在" });
       await incrementSkillView(input.id);
       return skill;
     }),
@@ -336,7 +365,8 @@ export const skillsRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const skill = await getSkillBySlug(input.slug);
-      if (!skill) throw new TRPCError({ code: "NOT_FOUND", message: "Skill 不存在" });
+      if (!skill)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Skill 不存在" });
       await incrementSkillView(skill.id);
       return skill;
     }),
@@ -346,7 +376,7 @@ export const skillsRouter = router({
     .input(
       z.object({
         title: z.string().min(1).max(128),
-        description: z.string().min(1),
+        description: z.string().min(1).max(500),
         category: z.enum([...SKILL_CATEGORIES] as [string, ...string[]]),
         skillMd: z.string().min(1),
         githubUrl: z.string().url().optional().or(z.literal("")),
@@ -390,7 +420,7 @@ export const skillsRouter = router({
       z.object({
         githubUrl: z.string().url(),
         title: z.string().min(1).max(128),
-        description: z.string().min(1),
+        description: z.string().min(1).max(500),
         category: z.enum([...SKILL_CATEGORIES] as [string, ...string[]]),
       })
     )
@@ -442,11 +472,22 @@ export const skillsRouter = router({
           ],
         });
         const rawContent = catRes.choices?.[0]?.message?.content ?? "";
-        const rawStr = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
-        const validCats = ["创意设计", "开发技术", "企业通信", "文档处理", "工具"];
-        const matched = validCats.find((c) => rawStr.includes(c));
+        const rawStr =
+          typeof rawContent === "string"
+            ? rawContent
+            : JSON.stringify(rawContent);
+        const validCats = [
+          "创意设计",
+          "开发技术",
+          "企业通信",
+          "文档处理",
+          "工具",
+        ];
+        const matched = validCats.find(c => rawStr.includes(c));
         if (matched) suggestedCategory = matched;
-      } catch { /* ignore, category stays empty */ }
+      } catch {
+        /* ignore, category stays empty */
+      }
 
       return { skillMd, ...parsed, suggestedCategory };
     }),
@@ -457,8 +498,10 @@ export const skillsRouter = router({
       z.object({
         id: z.number(),
         title: z.string().min(1).max(128).optional(),
-        description: z.string().min(1).optional(),
-        category: z.enum([...SKILL_CATEGORIES] as [string, ...string[]]).optional(),
+        description: z.string().min(1).max(500).optional(),
+        category: z
+          .enum([...SKILL_CATEGORIES] as [string, ...string[]])
+          .optional(),
         skillMd: z.string().min(1).optional(),
         githubUrl: z.string().optional(),
         coverUrl: z.string().optional(),
@@ -483,7 +526,11 @@ export const skillsRouter = router({
         });
       }
 
-      await updateSkill(id, { ...data, uiConfig, category: data.category as any });
+      await updateSkill(id, {
+        ...data,
+        uiConfig,
+        category: data.category as any,
+      });
       return getSkillById(id);
     }),
 
@@ -519,10 +566,15 @@ export const skillsRouter = router({
       if (skill.uiConfig) {
         try {
           const cfg = JSON.parse(skill.uiConfig);
-          if (Array.isArray(cfg.examplePrompts) && cfg.examplePrompts.length > 0) {
+          if (
+            Array.isArray(cfg.examplePrompts) &&
+            cfg.examplePrompts.length > 0
+          ) {
             return cfg.examplePrompts as string[];
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
 
       // Generate via LLM
@@ -565,7 +617,9 @@ ${skill.skillMd.slice(0, 2000)}
           if (Array.isArray(direct)) {
             prompts = direct.filter((s): s is string => typeof s === "string");
           } else if (direct?.prompts && Array.isArray(direct.prompts)) {
-            prompts = direct.prompts.filter((s: unknown): s is string => typeof s === "string");
+            prompts = direct.prompts.filter(
+              (s: unknown): s is string => typeof s === "string"
+            );
           }
         } catch {
           // Try 2: extract JSON object/array from text using regex
@@ -574,11 +628,20 @@ ${skill.skillMd.slice(0, 2000)}
             try {
               const extracted = JSON.parse(jsonMatch[0]);
               if (Array.isArray(extracted)) {
-                prompts = extracted.filter((s): s is string => typeof s === "string");
-              } else if (extracted?.prompts && Array.isArray(extracted.prompts)) {
-                prompts = extracted.prompts.filter((s: unknown): s is string => typeof s === "string");
+                prompts = extracted.filter(
+                  (s): s is string => typeof s === "string"
+                );
+              } else if (
+                extracted?.prompts &&
+                Array.isArray(extracted.prompts)
+              ) {
+                prompts = extracted.prompts.filter(
+                  (s: unknown): s is string => typeof s === "string"
+                );
               }
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           // Try 3: extract quoted strings as fallback
           if (prompts.length === 0) {
@@ -591,7 +654,9 @@ ${skill.skillMd.slice(0, 2000)}
 
         // Sanitize: remove any strings containing XML/HTML tags or non-text content
         const safePrompts = prompts
-          .filter(p => typeof p === "string" && p.length >= 4 && !/<[a-zA-Z]/.test(p))
+          .filter(
+            p => typeof p === "string" && p.length >= 4 && !/<[a-zA-Z]/.test(p)
+          )
           .slice(0, 3);
 
         // Cache into uiConfig (always write, even if uiConfig was null)
@@ -599,18 +664,26 @@ ${skill.skillMd.slice(0, 2000)}
           try {
             let cfg: Record<string, unknown> = {};
             if (skill.uiConfig) {
-              try { cfg = JSON.parse(skill.uiConfig); } catch { /* ignore */ }
+              try {
+                cfg = JSON.parse(skill.uiConfig);
+              } catch {
+                /* ignore */
+              }
             }
             cfg.examplePrompts = safePrompts;
             await updateSkill(skill.id, { uiConfig: JSON.stringify(cfg) });
-          } catch { /* ignore cache write failure */ }
+          } catch {
+            /* ignore cache write failure */
+          }
         }
 
-        return safePrompts.length > 0 ? safePrompts : [
-          `帮我处理一个任务`,
-          `我想使用这个 Skill 提升效率`,
-          `请帮我生成内容`,
-        ];
+        return safePrompts.length > 0
+          ? safePrompts
+          : [
+              `帮我处理一个任务`,
+              `我想使用这个 Skill 提升效率`,
+              `请帮我生成内容`,
+            ];
       } catch (err) {
         console.error("[getExamplePrompts] LLM error:", err);
         // Fallback: generic prompts

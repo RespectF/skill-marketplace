@@ -259,6 +259,26 @@ export async function getUserConversations(userId: number, limit = 50) {
     .limit(limit);
 }
 
+/** 获取用户对某个 Skill 的所有对话 */
+export async function getConversationsBySkill(userId: number, skillId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: conversations.id,
+      title: conversations.title,
+      messageCount: conversations.messageCount,
+      createdAt: conversations.createdAt,
+      updatedAt: conversations.updatedAt,
+      skillId: conversations.skillId,
+    })
+    .from(conversations)
+    .where(
+      and(eq(conversations.userId, userId), eq(conversations.skillId, skillId))
+    )
+    .orderBy(desc(conversations.updatedAt));
+}
+
 /** 获取单个会话的消息列表 */
 export async function getConversationMessages(conversationId: number) {
   const db = await getDb();

@@ -29,11 +29,17 @@ export async function handleOAuthCallback(req: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
 
+  console.log("[OAuth] Callback received:", {
+    code: code ? "present" : "missing",
+    state: state ? "present" : "missing",
+  });
+
   if (!code) {
     return Response.json({ error: "code is required" }, { status: 400 });
   }
 
   try {
+    console.log("[OAuth] Requesting access token from GitHub...");
     const tokenResponse = await axios.post<GitHubTokenResponse>(
       "https://github.com/login/oauth/access_token",
       {
@@ -44,14 +50,26 @@ export async function handleOAuthCallback(req: Request) {
       { headers: { Accept: "application/json" }, timeout: 10000 }
     );
 
+    console.log("[OAuth] Token response:", tokenResponse.data);
     const accessToken = tokenResponse.data.access_token;
     if (!accessToken) {
-      return Response.json({ error: "Failed to get access token" }, { status: 400 });
+      return Response.json(
+        { error: "Failed to get access token" },
+        { status: 400 }
+      );
     }
 
-    const userResponse = await axios.get<GitHubUser>("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      timeout: 10000,
+    const userResponse = await axios.get<GitHubUser>(
+      "https://api.github.com/user",
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000,
+      }
+    );
+
+    console.log("[OAuth] User info:", {
+      id: userResponse.data.id,
+      login: userResponse.data.login,
     });
 
     let email = userResponse.data.email;
@@ -60,7 +78,9 @@ export async function handleOAuthCallback(req: Request) {
         "https://api.github.com/user/emails",
         { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 10000 }
       );
-      const primaryEmail = emailsResponse.data.find((e) => e.primary && e.verified);
+      const primaryEmail = emailsResponse.data.find(
+        e => e.primary && e.verified
+      );
       email = primaryEmail?.email ?? null;
     }
 
@@ -86,6 +106,8 @@ export async function handleOAuthCallback(req: Request) {
       expiresInMs: ONE_YEAR_MS,
     });
 
+    console.log("[OAuth] Session token created, setting cookie...");
+
     // 组装原生的 Set-Cookie 字符串
     const cookieOpts = getSessionCookieOptions(req);
     const cookieParts = [
@@ -94,19 +116,27 @@ export async function handleOAuthCallback(req: Request) {
       `Path=${cookieOpts.path}`,
       cookieOpts.httpOnly ? "HttpOnly" : "",
       `SameSite=${cookieOpts.sameSite}`,
-      cookieOpts.secure ? "Secure" : ""
-    ].filter(Boolean).join("; ");
+      cookieOpts.secure ? "Secure" : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
+
+    console.log("[OAuth] Cookie string:", cookieParts);
 
     let redirectUrl = "/";
     if (state) {
-      try { redirectUrl = atob(state); } catch { /* use default */ }
+      try {
+        redirectUrl = atob(state);
+      } catch {
+        /* use default */
+      }
     }
 
     // 返回标准 Response，利用 Headers 执行 302 重定向并种下 Cookie
     return new Response(null, {
       status: 302,
       headers: {
-        "Location": redirectUrl,
+        Location: redirectUrl,
         "Set-Cookie": cookieParts,
       },
     });
