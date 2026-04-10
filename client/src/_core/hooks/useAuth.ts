@@ -1,3 +1,4 @@
+import { COOKIE_NAME } from "@shared/const";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
@@ -7,6 +8,11 @@ type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
 };
+
+// 清除会话 cookie
+function clearSessionCookie() {
+  document.cookie = `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+}
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
@@ -36,8 +42,10 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      // 清除本地数据
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      // 清除客户端 cookie（确保即使服务器 Set-Cookie 头未正确处理，cookie 也会被清除）
+      clearSessionCookie();
     }
   }, [logoutMutation, utils]);
 

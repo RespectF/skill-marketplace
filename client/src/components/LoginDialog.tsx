@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog";
 import { getLoginUrl } from "@/const";
 import { Zap } from "lucide-react";
-import { X } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
@@ -22,16 +21,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-2xl max-w-sm">
         {/* Main Card */}
-        <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          {/* Close button */}
-          <button
-            onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 transition-colors z-10"
-            aria-label="关闭"
-          >
-            <X className="w-4 h-4 text-gray-400" />
-          </button>
-
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Header with gradient */}
           <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 px-8 pt-10 pb-6 text-center">
             {/* Logo */}
