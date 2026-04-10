@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { LoginDialog } from "@/components/LoginDialog";
 
 interface NavbarProps {
   onSearch?: (query: string) => void;
@@ -28,6 +28,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [searchValue, setSearchValue] = useState("");
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,133 +38,137 @@ export default function Navbar({ onSearch }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
-      <div className="container">
-        <div className="flex items-center h-14 gap-4">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-base text-foreground hidden sm:block">
-              Skill 商店
-            </span>
-          </Link>
+    <>
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
+        <div className="container">
+          <div className="flex items-center h-14 gap-4">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-base text-foreground hidden sm:block">
+                Skill 商店
+              </span>
+            </Link>
 
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-1 ml-2">
-            <NavLink href="/">广场</NavLink>
-            {isAuthenticated && <NavLink href="/my-skills">我的技能</NavLink>}
-          </nav>
+            {/* Nav Links */}
+            <nav className="hidden md:flex items-center gap-1 ml-2">
+              <NavLink href="/">广场</NavLink>
+              {isAuthenticated && <NavLink href="/my-skills">我的技能</NavLink>}
+            </nav>
 
-          {/* Search — desktop inline form */}
-          <form
-            onSubmit={handleSearch}
-            className="flex-1 max-w-md mx-auto hidden sm:block"
-          >
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                placeholder="搜索技能..."
-                className="pl-9 h-9 bg-muted/50 border-transparent focus:border-border focus:bg-white text-sm"
-              />
-            </div>
-          </form>
+            {/* Search — desktop inline form */}
+            <form
+              onSubmit={handleSearch}
+              className="flex-1 max-w-md mx-auto hidden sm:block"
+            >
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={searchValue}
+                  onChange={e => setSearchValue(e.target.value)}
+                  placeholder="搜索技能..."
+                  className="pl-9 h-9 bg-muted/50 border-transparent focus:border-border focus:bg-white text-sm"
+                />
+              </div>
+            </form>
 
-          {/* Search — mobile icon button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setLocation("/explore")}
-                className="sm:hidden shrink-0"
-                aria-label="搜索技能"
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>搜索技能</TooltipContent>
-          </Tooltip>
-
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Create Skill */}
-            {isAuthenticated ? (
-              <>
+            {/* Search — mobile icon button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
-                  size="sm"
-                  onClick={() => setLocation("/create")}
-                  className="gap-1.5 text-sm"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setLocation("/explore")}
+                  className="sm:hidden shrink-0"
+                  aria-label="搜索技能"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">创建技能</span>
+                  <Search className="w-5 h-5" />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent>搜索技能</TooltipContent>
+            </Tooltip>
 
-                {/* User Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 transition-colors">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage
-                          src={(user as any)?.avatarUrl ?? undefined}
-                          alt={user?.name ?? "U"}
-                        />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                          {user?.name?.[0]?.toUpperCase() ?? "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 min-w-0">
-                    <div className="px-3 py-2 min-w-0">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <p className="text-sm font-medium truncate">
-                            {user?.name ?? "用户"}
-                          </p>
-                        </TooltipTrigger>
-                        <TooltipContent>{user?.name ?? "用户"}</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user?.email}
-                          </p>
-                        </TooltipTrigger>
-                        <TooltipContent>{user?.email}</TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setLocation("/my-skills")}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      我的技能
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                      <Settings className="w-4 h-4 mr-2" />
-                      用户中心
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={logout}
-                      className="text-destructive"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      退出登录
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <Button size="sm" asChild>
-                <a href={getLoginUrl()}>登录</a>
-              </Button>
-            )}
+            <div className="flex items-center gap-2 ml-auto">
+              {/* Create Skill */}
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setLocation("/create")}
+                    className="gap-1.5 text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">创建技能</span>
+                  </Button>
+
+                  {/* User Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-2 rounded-full hover:bg-muted/60 p-1 transition-colors">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={(user as any)?.avatarUrl ?? undefined}
+                            alt={user?.name ?? "U"}
+                          />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                            {user?.name?.[0]?.toUpperCase() ?? "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 min-w-0">
+                      <div className="px-3 py-2 min-w-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm font-medium truncate">
+                              {user?.name ?? "用户"}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>{user?.name ?? "用户"}</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {user?.email}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>{user?.email}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setLocation("/my-skills")}>
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        我的技能
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        用户中心
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={logout}
+                        className="text-destructive"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        退出登录
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <Button size="sm" onClick={() => setLoginDialogOpen(true)}>
+                  登录
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} />
+    </>
   );
 }
 
